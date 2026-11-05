@@ -1,3 +1,16 @@
+# Panelden antrenör daveti
+
+[006 bir defalık SQL kurulumu](antrenor-davet-kurulum.sql)
+
+[Antrenör davet paneli](assets/antrenor-davet-paneli.png) · [Hesap yönetimi / mobil](assets/antrenor-hesap-yonetimi-mobil.png) · [Antrenör kayıt ekranı / mobil](assets/antrenor-davet-kayit-mobil.png)
+
+İlk kurulumda Supabase Authentication → URL Configuration:
+- Site URL: `https://alanyadenizaslanlari.netlify.app`
+- Redirect URLs: `https://alanyadenizaslanlari.netlify.app/**`
+- Email sağlayıcısında yeni kullanıcı kaydı ve Confirm email açık olmalı.
+
+Sonrasında yönetici Antrenörler → Antrenör davet et ile bağlantı oluşturup paylaşır. Antrenör kendi parolasını belirler; doğrulama e-postasını Supabase Auth gönderir. Yeni antrenörler için SQL gerekmez. Görseller test verileriyle alınmıştır.
+
 # Sade paneller ve yeni özellikler
 
 [005 ek SQL kurulumu](profil-sporcu-kurulum.sql) — 001–004 tekrar çalıştırılmaz.
