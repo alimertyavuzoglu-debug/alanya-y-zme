@@ -28,3 +28,10 @@ Son adres belirlendiğinde Supabase Authentication / URL Configuration / Site UR
 - Çıkış, yenileme ve tekrar giriş; hata durumunda Netlify deploy log'larından gizli değer içermeyen hata satırları.
 
 Yerel testler uzaktaki gerçek oturum ve medya yazımı yerine geçmez. Bu kontroller yayın adresi ve kullanıcı etkileşimi hazır olduğunda tamamlanır.
+
+
+## Üretim dalını değiştirdikten sonra
+
+Güncel arayüz yolu: Project configuration → Developer settings → Continuous deployment → Branches and deploy contexts → Configure. Production branch `main` olmalı ve Save ile kaydedilmelidir. Dal değişikliği önceki yayını tek başına değiştirmeyebilir; Deploys → Trigger deploy ile veya main dalına yeni push ile yeni build başlatın.
+
+Doğru yayının işaretleri: ana sayfada çalışan tanıtım sitesi, `/login` HTTP 200 ve anonim `/api/auth/me` JSON HTTP 401. “Deniz Aslanları — Tasarım Seçimi” başlığı ve `/login` HTTP 404, eski statik galerinin hâlâ yayında olduğunu gösterir. Bu durumda Deploys ekranında yeni build'in dalını, commit'ini, durumunu ve hata log'unu inceleyin.
