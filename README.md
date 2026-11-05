@@ -1,6 +1,6 @@
 # Deniz Aslanları — Tasarım önerileri
 
-Bu dal yalnızca üç tasarım önerisini içerir. Canlı kulüp uygulaması değildir.
+Bu dal yalnızca altı tasarım önerisini içerir. Canlı kulüp uygulaması değildir.
 
 ## Tasarım 1
 
@@ -19,3 +19,21 @@ Bu dal yalnızca üç tasarım önerisini içerir. Canlı kulüp uygulaması de�
 ![Tasarım 3](assets/tasarim-3.png)
 
 [Tam boy aç](assets/tasarim-3.png)
+
+## Tasarım 4
+
+![Tasarım 4](assets/tasarim-4.png)
+
+[Tam boy aç](assets/tasarim-4.png)
+
+## Tasarım 5
+
+![Tasarım 5](assets/tasarim-5.png)
+
+[Tam boy aç](assets/tasarim-5.png)
+
+## Tasarım 6
+
+![Tasarım 6](assets/tasarim-6.png)
+
+[Tam boy aç](assets/tasarim-6.png)
