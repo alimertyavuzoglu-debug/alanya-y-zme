@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { authenticated, databaseFailure, failure } from '@/lib/http';
+import { authenticated, databaseFailure, failure, mutationGuard, readBody } from '@/lib/http';
+import { roleSession } from '@/lib/role-session';
+import { coachAccountSchema } from '@/lib/invitations';
+import { invitationFailure, invitationHeaders } from '@/lib/invitation-server';
 export const dynamic='force-dynamic';
 export async function GET() {
  const auth=await authenticated(); if(auth.response)return auth.response;
@@ -18,4 +21,16 @@ export async function GET() {
   if(error)return databaseFailure(error); result.push(...data);
  }
  return NextResponse.json({data:result},{headers:{'Cache-Control':'no-store'}});
+}
+
+export async function PATCH(request: Request) {
+ const guard=mutationGuard(request);if(guard)return guard;
+ const auth=await roleSession('ADMIN');if(auth.response)return auth.response;
+ let body: unknown;try{body=await readBody(request);}catch{return failure('Geçersiz istek.',400);}
+ const parsed=coachAccountSchema.safeParse(body);if(!parsed.success)return failure('Antrenör bilgilerini kontrol edin.',422);
+ const {error}=await auth.client.rpc('update_coach_account',{
+  coach_user:parsed.data.id,new_name:parsed.data.display_name,active:parsed.data.is_active,
+ });
+ if(error)return invitationFailure(error);
+ return NextResponse.json({ok:true},{headers:invitationHeaders});
 }

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toInstant, toLocalInput } from '@/lib/club-client';
 export type Option = { value: string; label: string };
-export type Field = { key: string; label: string; type?: 'text'|'date'|'datetime-local'|'time'|'number'|'textarea'|'select'|'checkbox'; options?: Option[]; optional?: boolean; nullable?: boolean; min?: number; max?: number; immutable?: boolean };
+export type Field = { key: string; label: string; type?: 'text'|'email'|'date'|'datetime-local'|'time'|'number'|'textarea'|'select'|'checkbox'; options?: Option[]; optional?: boolean; nullable?: boolean; min?: number; max?: number; immutable?: boolean };
 export type FormDefinition = { title: string; resource: string; fields: Field[]; initial?: Record<string,unknown>; keys?: string[]; hint?: string; submitLabel?: string };
 export function formPayload(fields: Field[], form: FormData) {
   const body: Record<string, unknown> = {};
@@ -37,7 +37,7 @@ export function RecordForm({ definition, onClose, onSave }: { definition: FormDe
       {f.type==='select' ? <><select name={frozen?undefined:f.key} defaultValue={value} required={!f.optional} disabled={frozen} autoFocus={i===0}><option value="">{f.optional?'Seçim yok':'Seçiniz'}</option>{f.options?.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select>{frozen&&<input type="hidden" name={f.key} value={value}/>}</>
       :f.type==='textarea'?<textarea name={f.key} defaultValue={value} required={!f.optional} maxLength={f.max??20000} rows={5}/>
       :f.type==='checkbox'?<input type="checkbox" name={f.key} defaultChecked={initial===undefined?true:Boolean(initial)}/>
-      :<input name={f.key} type={f.type??'text'} defaultValue={value} required={!f.optional} readOnly={frozen} min={f.type==='number'?f.min:undefined} max={f.type==='number'?f.max:undefined} maxLength={f.type==='text'||!f.type?f.max??150:undefined} autoFocus={i===0}/>}
+      :<input name={f.key} type={f.type??'text'} defaultValue={value} required={!f.optional} readOnly={frozen} min={f.type==='number'?f.min:undefined} max={f.type==='number'?f.max:undefined} maxLength={f.type==='text'||f.type==='email'||!f.type?f.max??150:undefined} autoFocus={i===0}/>}
      </label>;
     })}
    </fieldset>

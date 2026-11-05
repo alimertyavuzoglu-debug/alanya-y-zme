@@ -25,3 +25,6 @@
 @media(max-width:500px){.student-checklist{grid-template-columns:1fr}.profile-shortcut strong{max-width:115px}.profile-photo-row{flex-direction:column;align-items:flex-start}}
 
 .admin-quick-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}.nav-more{margin-top:12px}.nav-more summary{cursor:pointer;font-size:.82rem;padding:12px;color:inherit;opacity:.8}.nav-more .nav-item{font-size:.85rem}
+.invite-share{padding:20px;background:#f0f5f2;border:1px solid var(--line);border-radius:8px;margin-bottom:24px}.invite-share p{font-size:12px;color:var(--muted);margin-top:8px}.invite-share input{font-size:12px}.invitation-page{min-height:100dvh;display:grid;place-items:center;padding:32px 20px}.invitation-card{width:min(100%,560px);margin:0}.invitation-card h1{font-size:32px}.invitation-card>.eyebrow{color:var(--teal);text-decoration:none}.invite-email{font-weight:600;overflow-wrap:anywhere}.invitation-footer{margin:26px 0 14px}.invitation-card .notice{overflow-wrap:anywhere}.request-row p{overflow-wrap:anywhere}
+
+.nav-more>summary{white-space:nowrap}@media(max-width:800px){.sidebar nav .nav-more{flex-shrink:0}}

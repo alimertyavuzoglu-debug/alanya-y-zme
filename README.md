@@ -201,3 +201,28 @@ Mevcut projede **yalnızca** `supabase/migrations/202611050005_profiles_requests
 - API’ler: GET/PUT `/api/coach/profile`, POST `/api/coach/avatar`, GET/POST `/api/coach/athlete-requests`, GET/POST `/api/admin/athlete-requests`, POST `/api/admin/lessons`. Cookie oturumu, aktif rol, same-origin yazma kontrolü ve sunucu tarafı validasyon kullanılır; RLS ayrıca uygulanır.
 
 Doğrulama: üretim derlemesi, 17 tarayıcı senaryosu ve 49 yerel test; PostgreSQL izinleri, özel fotoğraflar, kendi profilini düzenlerken yetki yükseltememe, onaysız sporcu izolasyonu, onay/ret, tekrar karar ve başarısız işlemde rollback. Yetkili tarayıcı senaryoları API mock kullanır; gerçek Supabase hesabıyla profil/talep işlemleri 005 uygulandıktan sonra ayrıca doğrulanmalıdır.
+
+## Antrenör davet ve hesap yönetimi (006)
+
+Yeni antrenör için rutin SQL veya Authentication / Users işlemi gerekmez. Yönetici **Antrenörler → Antrenör davet et** üzerinden ad/e-posta girer ve üretilen bağlantıyı kişiye paylaşır. Uygulama bağlantıyı kendiliğinden e-postalamaz; yeni kullanıcının e-posta doğrulaması Supabase Auth tarafından gönderilir. Antrenör kendi parolasını belirler; mevcut hesabı olan kişi davet ekranındaki **Zaten hesabım var** seçeneğini kullanır. Sonrasında ders ataması yönetici tarafından yapılır.
+
+### Bir defalık etkinleştirme
+
+1. Önceki kurulumları tekrarlamadan `supabase/migrations/202611050006_coach_invitations.sql` dosyasını SQL Editor’da bir kez çalıştırın. Bu ek kurulum mevcut hesapları/dersleri silmez, antrenör yetkilerini kaldırmaz. 005’ten bağımsızdır; profil ve sporcu talebi özellikleri için 005 yine gereklidir.
+2. Supabase **Authentication → URL Configuration**: Site URL `https://alanyadenizaslanlari.netlify.app`; Redirect URLs listesine `https://alanyadenizaslanlari.netlify.app/**` ekleyin. Özel alan adına geçilirse üretim origin ve bu ayarlar birlikte güncellenmelidir. Yerelde doğrulama denenecekse ilgili localhost origin ayrı eklenir.
+3. Supabase Email sağlayıcısında e-posta ile yeni kullanıcı kaydı etkin olmalı. **Confirm email** açık tutulmalıdır. Gerçek e-posta teslimi Auth/SMTP ayarlarına ve sağlayıcı gönderim limitlerine bağlıdır; sunucu 429 mesajını kullanıcıya gösterir.
+
+### Davet ve yetki kuralları
+
+- Sunucu 32 rastgele baytlık bağlantı anahtarı üretir; veritabanında yalnızca SHA-256 özeti tutulur. HTTP listeleme token özetini dahi vermez. Ham bağlantı oluşturulduğu anda gösterilir; kaybolursa yeni bağlantı oluşturulur.
+- Davet 7 gün geçerli ve e-posta adresine bağlıdır. Yenileme aynı e-postanın eski bekleyen davetini iptal eder; yönetici ayrıca iptal edebilir. Kabul satır kilidiyle yapılır; aynı kişinin başarılı kabulünü tekrar etmesi çoğaltma yapmaz.
+- Davet kabulü Auth oturumundaki gerçek `auth.users.email` ve `email_confirmed_at` değerlerini denetler. Gövdeden rol/e-posta ataması alınmaz; kullanıcı metadata’sına güvenilmez. Doğrulanmamış/yanlış e-posta, anonim, süresi dolmuş veya iptal davet profil/rol oluşturamaz.
+- Profil ve yalnızca COACH rolü aynı DB transaction’ında oluşur. Mevcut aktif profilin adı korunur. Auth e-posta kaydı oluşturulup doğrulanmadan kalırsa kulüp profili/rolü oluşmaz; davet iptal edilse bile bu bekleyen Auth kaydı kulüp verilerine erişemez.
+- Davet kabul eden kişinin `/api/auth/me` için henüz profili olmaması beklenir; kabul uçları doğrudan doğrulanmış Auth oturumunu kontrol eder. Diğer kulüp API’leri aktif profil kontrolünü korur.
+- Mevcut antrenör adı ve aktifliği panelden düzenlenir. Pasifleştirme hesabı veya eski ders/yoklama kayıtlarını silmez; RLS ve API erişimini kapatır. ADMIN rolü de olan hesap bu ekrandan pasifleştirilemez.
+- PKCE doğrulama kodu `/auth/callback` üzerinde değiştirilir. İzin verilen dönüş yolu yalnızca aynı sitenin `/invite/<token>` adresidir. Doğrulama bağlantısı aynı tarayıcıda açılmalıdır; başka tarayıcıda açılmışsa doğrulama sonrasında davet bağlantısından mevcut parola ile giriş yapılabilir. Davet sayfası no-store/no-referrer/noindex kullanır.
+- Service-role veya secret anahtar kullanılmaz. Supabase’e doğrudan kayıt açılması tek başına kulüp rolü vermez.
+
+Yeni uçlar: GET/POST/DELETE `/api/admin/coach-invitations`, PATCH `/api/admin/coaches`, GET `/api/invitations`, POST `/api/invitations/session`, POST `/api/invitations/accept`, GET `/auth/callback`, `/invite/[token]`. Yetkili yönetici işlemlerinde aktif ADMIN kontrolü; tüm yazmalarda aynı kaynak ve katı alan doğrulaması vardır.
+
+Doğrulama: üretim derlemesi, 22 tarayıcı senaryosu ve 59 yerel test; PostgreSQL testleri doğrulanmış e-posta/rol sınırı, iptal/yenileme/süre aşımı, idempotent kabul, mevcut hesap, aktif/pasif ve yönetici hesabını korumayı kapsar. Tarayıcıdaki yetkili UI/Auth cevapları mock’tur; gerçek e-posta gönderimi ve gerçek davet kabulü uzak 006 kurulumu sonrasında ayrıca doğrulanmalıdır.

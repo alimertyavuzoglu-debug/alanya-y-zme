@@ -195,3 +195,52 @@ test('admin reviews athlete requests and requires reason for rejection',async({p
  await page.goto('/admin');await page.getByRole('button',{name:'Sporcu taleplerini incele'}).click();await expect(page.getByText('Yeni Sporcu',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Reddet',exact:true}).click();await page.getByRole('button',{name:'Talebi reddet',exact:true}).click();expect(decisions).toHaveLength(0);await page.getByLabel('Ret gerekçesi',{exact:false}).fill('Veli bilgisi eksik.');await page.getByRole('button',{name:'Talebi reddet',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();expect(decisions[0].review_message).toBe('Veli bilgisi eksik.');
  rows[0].status='PENDING';await page.getByRole('button',{name:'Yenile',exact:true}).last().click();await page.getByRole('button',{name:'Onayla',exact:true}).click();await page.getByLabel('Mevcut sporcu ile eşleştir',{exact:false}).selectOption(uid(5));await page.getByRole('button',{name:'Onayla ve gruba ekle'}).click();await expect(page.getByRole('dialog')).not.toBeVisible();expect(decisions[1].existing_athlete).toBe(uid(5));await expect(page.getByRole('status')).toContainText('onaylandı');
 });
+
+test('admin invites coach from panel, replaces and revokes invitation',async({page})=>{
+ await fixture(page);const token='a'.repeat(64);const rows:Row[]=[];const actions:Row[]=[];
+ await page.route('**/api/admin/coach-invitations**',async route=>{
+  const method=route.request().method();
+  if(method==='POST'){
+   const body=route.request().postDataJSON();actions.push({method,...body});rows.forEach(r=>r.status='REVOKED');
+   const row={id:uid(300+actions.length),...body,status:'PENDING',expires_at:new Date(Date.now()+7*86400000).toISOString()};rows.push(row);
+   return route.fulfill({status:201,json:{id:row.id,url:'https://club.example/invite/'+token}});
+  }
+  if(method==='DELETE'){const body=route.request().postDataJSON();actions.push({method,...body});rows.find(r=>r.id===body.id)!.status='REVOKED';return route.fulfill({json:{ok:true}});}
+  return route.fulfill({json:{data:rows}});
+ });
+ await page.goto('/admin');await page.getByRole('button',{name:'Antrenörler',exact:true}).click();
+ await page.getByRole('button',{name:'+ Antrenör davet et',exact:true}).click();await page.getByLabel('Ad soyad',{exact:false}).fill('Yeni Antrenör');await page.getByLabel('E-posta adresi',{exact:false}).fill('yeni@example.com');await page.getByRole('button',{name:'Davet bağlantısı oluştur',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.getByLabel('Davet bağlantısı',{exact:true})).toHaveValue('https://club.example/invite/'+token);await expect(page.getByText('yeni@example.com',{exact:true})).toBeVisible();
+ expect(actions[0]).toEqual({method:'POST',email:'yeni@example.com',display_name:'Yeni Antrenör'});
+ page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Yeni bağlantı',exact:true}).click();expect(actions.filter(a=>a.method==='POST')).toHaveLength(2);
+ await page.evaluate(()=>{(document.activeElement as HTMLElement)?.blur();window.scrollTo(0,0);});await page.screenshot({path:'test-results/admin-coach-invitation.png',fullPage:true});await page.getByRole('button',{name:'Daveti iptal et',exact:true}).click();await expect(page.getByText('Bekleyen davet yok.',{exact:true})).toBeVisible();expect(actions.at(-1)?.method).toBe('DELETE');
+});
+test('admin edits coach name and active state from panel',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await fixture(page);let payload:Row={};
+ await page.route('**/api/admin/coach-invitations**',r=>r.fulfill({json:{data:[]}}));
+ await page.route('**/api/admin/coaches',async route=>{if(route.request().method()==='PATCH'){payload=route.request().postDataJSON();return route.fulfill({json:{ok:true}});}return route.fulfill({json:{data:[{id:uid(2),display_name:payload.display_name??'Test Antrenörü',is_active:payload.is_active??true}]}});});
+ await page.goto('/admin');await page.getByRole('button',{name:'Antrenörler',exact:true}).click();await page.getByRole('button',{name:'Hesabı düzenle',exact:false}).click();await page.getByLabel('Ad soyad',{exact:false}).fill('Düzenlenen Antrenör');await page.getByLabel('Hesap aktif',{exact:true}).uncheck();await page.getByRole('button',{name:'Kaydet',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();expect(payload).toEqual({id:uid(2),display_name:'Düzenlenen Antrenör',is_active:false});await expect(page.getByRole('cell',{name:'Pasif',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.evaluate(()=>{(document.activeElement as HTMLElement)?.blur();window.scrollTo(0,0);});await page.screenshot({path:'test-results/admin-coach-management-mobile.png',fullPage:true});
+});
+test('new coach chooses password, confirms email and accepts invitation before entering panel',async({page})=>{
+ await fixture(page,'COACH',coachSeed());const token='b'.repeat(64);let user:null|{email:string;confirmed:boolean}=null;const submissions:Row[]=[];
+ await page.route('**/api/invitations?*',route=>route.fulfill({json:{invitation:{email:'coach@example.com',display_name:'Yeni Antrenör',status:'PENDING',expires_at:new Date(Date.now()+86400000).toISOString()},user}}));
+ await page.route('**/api/invitations/session',async route=>{submissions.push(route.request().postDataJSON());return route.fulfill({json:{needs_confirmation:true}});});
+ let accepts=0;await page.route('**/api/invitations/accept',async route=>{accepts++;return route.fulfill({json:{ok:true}});});
+ await page.goto('/invite/'+token);await expect(page.getByText('coach@example.com',{exact:true})).toBeVisible();await page.getByLabel('Yeni parola',{exact:false}).fill('fixture-new-password');await page.getByLabel('Parolayı tekrar girin',{exact:false}).fill('fixture-new-password');await page.getByRole('button',{name:'Hesabımı oluştur'}).click();await expect(page.getByRole('status')).toContainText('doğrulama bağlantısını');expect(accepts).toBe(0);expect(submissions[0]).toEqual({token,action:'signup',password:'fixture-new-password'});
+ user={email:'coach@example.com',confirmed:true};await page.goto('/invite/'+token);await page.getByRole('button',{name:'Daveti kabul et ve panele geç'}).click();await expect(page).toHaveURL(/\/coach$/);expect(accepts).toBe(1);
+});
+test('invited existing user signs in, failed invitation keeps form and retry succeeds',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await fixture(page,'COACH',coachSeed());const token='c'.repeat(64);let attempts=0;let payload:Row={};
+ await page.route('**/api/invitations?*',route=>route.fulfill({json:{invitation:{email:'existing@example.com',display_name:'Mevcut Antrenör',status:'PENDING'},user:null}}));
+ await page.route('**/api/invitations/session',async route=>{attempts++;payload=route.request().postDataJSON();return route.fulfill(attempts===1?{status:403,json:{error:'Bu davet hesabınıza ait değil.'}}:{json:{ok:true}});});
+ await page.goto('/invite/'+token);await page.getByRole('button',{name:'Zaten hesabım var',exact:true}).click();await page.getByLabel('Mevcut parola',{exact:false}).fill('existing-fixture-password');await page.getByRole('button',{name:'Giriş yap ve daveti kabul et'}).click();await expect(page.locator('p[role=alert]')).toContainText('hesabınıza ait değil');await expect(page.getByLabel('Mevcut parola',{exact:false})).toHaveValue('existing-fixture-password');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.evaluate(()=>{(document.activeElement as HTMLElement)?.blur();window.scrollTo(0,0);});await page.screenshot({path:'test-results/coach-invitation-mobile.png',fullPage:true});await page.getByRole('button',{name:'Giriş yap ve daveti kabul et'}).click();await expect(page).toHaveURL(/\/coach$/);expect(payload.action).toBe('signin');
+});
+test('revoked invitation has no signup controls; callback rejects external redirect',async({page,request})=>{
+ const token='d'.repeat(64);await page.route('**/api/invitations?*',r=>r.fulfill({status:404,json:{error:'Davet geçersiz veya iptal edilmiş.'}}));
+ await page.goto('/invite/'+token);await expect(page.locator('p[role=alert]')).toContainText('iptal edilmiş');await expect(page.getByRole('button',{name:'Hesabımı oluştur'})).toHaveCount(0);
+ const invitePage=await request.get('/invite/'+token);expect(invitePage.headers()['referrer-policy']).toBe('no-referrer');expect(invitePage.headers()['x-robots-tag']).toBe('noindex, nofollow');
+ const callback=await request.get('/auth/callback?next=https://evil.example',{maxRedirects:0});expect(callback.status()).toBe(303);expect(new URL(callback.headers().location).pathname).toBe('/login');expect(callback.headers()['referrer-policy']).toBe('no-referrer');
+ const guarded=await request.post('/api/admin/coach-invitations',{data:{},headers:{Origin:'https://evil.example'}});expect(guarded.status()).toBe(403);
+ expect((await request.get('/api/admin/coach-invitations')).status()).toBe(401);
+});
