@@ -1,3 +1,11 @@
+# Uygulama ekranları
+
+![Ana sayfa](assets/uygulama-ana-sayfa.png)
+
+[Site içeriği paneli (test verileri)](assets/site-icerigi-paneli.png)
+
+[Ek SQL kurulumu](site-content-kurulum.sql)
+
 # Seçilen birleşim: 6 yerleşim + 5 renkler
 
 ![Birleşik tasarım](assets/tasarim-6-yerlesim-5-renkler.png)
