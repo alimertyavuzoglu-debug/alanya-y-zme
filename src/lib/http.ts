@@ -45,6 +45,11 @@ export function databaseFailure(error: { code?: string; message?: string }) {
   if (error.code === '23505') return failure('Bu kayıt zaten mevcut.', 409);
   if (['23503', '23514', '22P02'].includes(error.code ?? '')) {
     const messages: Record<string,string> = {
+      'Request dates outside open term':'Talep tarihi açık dönem sınırları içinde olmalı.',
+      'Request lesson cancelled':'Ders iptal edilmiş. Talebi ve ders durumunu kontrol edin.',
+      'Birth date is in future':'Doğum tarihi gelecekte olamaz.',
+      'Rejection reason required':'Ret gerekçesi gerekli.',
+      'Invalid profile':'Profil alanlarını kontrol edin.',
       'Overlapping enrollment':'Bu sporcu için aynı dönemde çakışan bir kayıt var.',
       'Enrollment outside term':'Sporcu kayıt tarihleri dönem sınırları içinde olmalı.',
       'Assignment outside term':'Antrenör görev tarihleri dönem sınırları içinde olmalı.',

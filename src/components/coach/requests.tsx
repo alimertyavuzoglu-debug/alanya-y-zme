@@ -1,0 +1,17 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {api,dateLabel,istanbulDate,type ClubData,type RecordRow} from '@/lib/club-client';
+import type {AthleteRequest} from '@/lib/coach-workflow';
+import {RecordForm,type FormDefinition} from '@/components/admin/record-form';
+const statuses={PENDING:'Onay bekliyor',APPROVED:'Onaylandı',REJECTED:'Reddedildi'};
+export async function requestRows(path:string):Promise<AthleteRequest[]>{const rows:AthleteRequest[]=[];for(let page=0;page<=10000;page++){const r=await api<{data:AthleteRequest[]}>(`${path}?page=${page}`);rows.push(...r.data);if(r.data.length<50)return rows;}throw new Error('Çok fazla talep var.');}
+export function CoachRequests({data,version,onCreate}:{data:ClubData;version:number;onCreate:()=>void}){
+ const [rows,setRows]=useState<AthleteRequest[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ async function load(){setLoading(true);setError('');try{setRows(await requestRows('/api/coach/athlete-requests'));}catch(e){setError(e instanceof Error?e.message:'Talepler yüklenemedi.');}finally{setLoading(false);}}
+ useEffect(()=>{void load();},[version]);
+ return <section className="panel"><div className="panel-heading"><div><h2>Sporcu taleplerim</h2><p>Yönetici onayından sonra sporcu gruba, seçili ders varsa ders listesine eklenir.</p></div><button className="button" onClick={onCreate}>+ Sporcu talebi</button></div>{error&&<p role="alert" className="notice error">{error}</p>}{loading?<p role="status">Talepler yükleniyor…</p>:rows.length?<div className="request-list">{rows.map(r=><article className="request-row" key={r.id}><div><strong>{r.first_name} {r.last_name}</strong><p>{data.group_terms.find(t=>t.id===r.group_term_id)?.name??'Dönem'} · {dateLabel(r.joined_on)}</p>{r.review_note&&<p className="review-note">Yönetici notu: {r.review_note}</p>}</div><span className={`badge ${r.status==='PENDING'?'unconfirmed':r.status==='APPROVED'?'active':'absent'}`}>{statuses[r.status]}</span></article>)}</div>:<div className="empty"><p>Henüz sporcu talebiniz yok.</p><small>Yeni sporcu için Sporcu talebi düğmesini kullanın.</small></div>}</section>;
+}
+export function AthleteRequestDialog({data,lesson,onClose,onSaved}:{data:ClubData;lesson?:RecordRow;onClose:()=>void;onSaved:()=>Promise<void>}){
+ const definition:FormDefinition={resource:'athlete_requests',title:lesson?'Bu derse sporcu ekleme talebi':'Yeni sporcu talebi',submitLabel:'Onaya gönder',hint:'Bu işlem sporcuyu hemen eklemez. Talep yöneticiye gider; onaylanınca grup kaydı ve seçili ders listesi oluşturulur.',initial:{group_term_id:lesson?.group_term_id??'',joined_on:lesson?istanbulDate(String(lesson.starts_at)):istanbulDate()},fields:[{key:'group_term_id',label:'Grup / dönem',type:'select',immutable:Boolean(lesson),options:data.group_terms.map(t=>({value:String(t.id),label:String(t.name)}))},{key:'first_name',label:'Sporcu adı',max:100},{key:'last_name',label:'Sporcu soyadı',max:100},{key:'birth_date',label:'Doğum tarihi (isteğe bağlı)',type:'date',optional:true,nullable:true},{key:'joined_on',label:'Gruba katılım tarihi',type:'date'},{key:'note',label:'Not (isteğe bağlı)',type:'textarea',optional:true,nullable:true,max:500}]};
+ return <RecordForm definition={definition} onClose={onClose} onSave={async payload=>{await api('/api/coach/athlete-requests',{method:'POST',body:JSON.stringify({...payload,session_id:lesson?.id??null})});await onSaved();}}/>;
+}

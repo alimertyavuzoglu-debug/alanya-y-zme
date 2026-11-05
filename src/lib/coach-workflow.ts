@@ -1,0 +1,9 @@
+import {z} from 'zod';
+const text=(max:number)=>z.string().trim().min(1).max(max);
+const optional=(max:number)=>z.string().trim().max(max).nullable();
+export const coachProfileSchema=z.object({display_name:text(150),phone:optional(30).refine(v=>!v||(/^[+0-9 ()-]+$/.test(v)&&v.replace(/\D/g,'').length>=7),'Telefonu kontrol edin.'),city:optional(100),specialization:optional(150),bio:optional(1500),avatar_path:z.string().max(300).nullable()}).strict();
+export const athleteRequestSchema=z.object({group_term_id:z.string().uuid(),session_id:z.string().uuid().nullable().optional(),first_name:text(100),last_name:text(100),birth_date:z.string().date().nullable(),joined_on:z.string().date(),note:optional(500)}).strict();
+export const reviewRequestSchema=z.object({id:z.string().uuid(),decision:z.enum(['APPROVED','REJECTED']),existing_athlete:z.string().uuid().nullable().optional(),review_message:optional(500).optional()}).strict().refine(v=>v.decision!=='REJECTED'||Boolean(v.review_message?.trim()),'Ret gerekçesi gerekli.');
+export const lessonBundleSchema=z.object({group_term_id:z.string().uuid(),coach_id:z.string().uuid(),starts_at:z.string().datetime({offset:true}),ends_at:z.string().datetime({offset:true}),athlete_ids:z.array(z.string().uuid()).max(200),training_plan_id:z.string().uuid().nullable(),create_assignment:z.boolean()}).strict().refine(v=>Date.parse(v.ends_at)>Date.parse(v.starts_at),'Bitiş başlangıçtan sonra olmalı.').refine(v=>new Set(v.athlete_ids).size===v.athlete_ids.length,'Tekrarlanan sporcu seçimi.');
+export type CoachProfile=z.infer<typeof coachProfileSchema> & {email:string;avatar_url:string|null};
+export type AthleteRequest={id:string;coach_id:string;group_term_id:string;session_id:string|null;first_name:string;last_name:string;birth_date:string|null;joined_on:string;note:string|null;status:'PENDING'|'APPROVED'|'REJECTED';review_note:string|null;athlete_id:string|null;created_at:string};

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toInstant, toLocalInput } from '@/lib/club-client';
 export type Option = { value: string; label: string };
 export type Field = { key: string; label: string; type?: 'text'|'date'|'datetime-local'|'time'|'number'|'textarea'|'select'|'checkbox'; options?: Option[]; optional?: boolean; nullable?: boolean; min?: number; max?: number; immutable?: boolean };
-export type FormDefinition = { title: string; resource: string; fields: Field[]; initial?: Record<string,unknown>; keys?: string[]; hint?: string };
+export type FormDefinition = { title: string; resource: string; fields: Field[]; initial?: Record<string,unknown>; keys?: string[]; hint?: string; submitLabel?: string };
 export function formPayload(fields: Field[], form: FormData) {
   const body: Record<string, unknown> = {};
   for (const f of fields) {
@@ -42,7 +42,7 @@ export function RecordForm({ definition, onClose, onSave }: { definition: FormDe
     })}
    </fieldset>
    {error&&<p className="notice error" role="alert">{error}</p>}
-   <div className="dialog-actions"><button type="button" className="button secondary" onClick={onClose} disabled={busy}>Vazgeç</button><button className="button" disabled={busy}>{busy?'Kaydediliyor…':'Kaydet'}</button></div>
+   <div className="dialog-actions"><button type="button" className="button secondary" onClick={onClose} disabled={busy}>Vazgeç</button><button className="button" disabled={busy}>{busy?'Kaydediliyor…':definition.submitLabel??'Kaydet'}</button></div>
   </form>
  </dialog>;
 }

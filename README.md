@@ -119,7 +119,7 @@ Yönetici paneli uygulanmıştır; gerçek hesapla oturum açılmış uçtan uca
 
 ### Mevcut Supabase projesine gerekli düzeltme
 
-001 migration zaten uygulanmışsa ilk kurulumu tekrar çalıştırmayın. Yalnızca `supabase/migrations/202611050002_history_edit_fix.sql` dosyasını SQL Editor'da çalıştırın. Bu, tarih düzenlemesindeki tabloya özel NEW/OLD alan hatasını giderir; tablo veya veri silmez. Uzak projeye bu düzeltmenin uygulandığı henüz doğrulanmadı.
+001 migration zaten uygulanmışsa ilk kurulumu tekrar çalıştırmayın. Yalnızca `supabase/migrations/202611050002_history_edit_fix.sql` dosyasını SQL Editor'da çalıştırın. Bu, tarih düzenlemesindeki tabloya özel NEW/OLD alan hatasını giderir; tablo veya veri silmez. Kullanıcı bu düzeltmeden sonra tarih düzenlemesinin çalıştığını doğruladı.
 
 ### Tarayıcı testleri
 
@@ -148,7 +148,7 @@ Ana sayfa `/`, kullanıcının seçtiği 6 numaralı yerleşim ve 5 numaralı ma
 - GET/PUT `/api/admin/content`: admin oturumu gerekir. PUT gövdesi `{ content: SiteContent, revision: number }`.
 - POST `/api/admin/media`: admin oturumu, aynı Origin ve ham görsel gövdesi; `{url}` döner. Genel JSON body helper yerine sınırlı binary akış kullanır.
 
-Uzak Supabase üzerinde 003 migration ve gerçek oturumla içerik kaydı/yüklemesi henüz doğrulanmadı; yerel DB ve tarayıcı testleri bu işlemin yerine geçmez. Supabase RLS'yi veya doğrulamayı kapatmayın.
+Kullanıcı 003 kurulumunu ve gerçek oturumla içerik kaydını doğruladı. Supabase RLS'yi veya doğrulamayı kapatmayın.
 
 ## Antrenör paneli (Aşama 4)
 
@@ -183,8 +183,21 @@ BEGIN
 END $$;
 ```
 
-Ardından yönetici panelinde grubu/dönemi ve sporcuyu kaydedin, antrenörü döneme ve somut derse atayın, dersin sporcu listesini oluşturun. Antrenör ayrı hesabıyla giriş yaptığında bu dersler görünür. Sadece hesap açmak bir ders veya gruba otomatik atama yapmaz.
+Ardından yönetici panelinde grubu/dönemi ve sporcuyu kaydedin. 005 kurulumundan sonra Ders oluştur formunda grubu, antrenörü ve sporcuları birlikte seçebilirsiniz. Eksik grup görevlendirmesi varsa açık onayınızla yalnızca ders günü için oluşturulur. Antrenör ayrı hesabıyla giriş yaptığında bu dersler görünür. Sadece hesap açmak bir ders veya gruba otomatik atama yapmaz.
 
 ### Test kapsamı
 
 Yerel PGlite testleri gerçek PostgreSQL RLS/transaction kurallarını çalıştırır. UI tarayıcı testlerinde yetkili oturum/API mock kullanılır. `npm run test:browser -- --grep-invert 'public homepage'` yönetici ve antrenör akışlarını kapsar; kullanıcı tarafından düzenlenebilen canlı ana sayfa içerik testi bu koşudan bilerek hariç tutulur. Canlı antrenör hesabıyla yoklama/plan yazımı ayrıca doğrulanmalıdır.
+
+## Sade paneller, profil ve sporcu onayları (005)
+
+Mevcut projede **yalnızca** `supabase/migrations/202611050005_profiles_requests_lessons.sql` dosyasını SQL Editor’da bir kez çalıştırın. 001–004 daha önce uygulandı; tekrar çalıştırmayın. Bu ek kurulum mevcut hesapları, dersleri veya yoklamaları silmez. Uzak veritabanında 005 henüz uygulanmadı; public anahtarla DDL çalıştırılamaz.
+
+- Antrenör menüsü üç bölüm: **Derslerim**, **Sporcu talepleri**, **Profilim**. Planlar ve haftalık saatler derslerin altında açılır. Geçmiş dersler de listede kalır.
+- Profil: ad soyad, telefon, şehir, uzmanlık, açıklama ve fotoğraf. Giriş e-postası salt okunurdur. Ad değişikliği diğer personelin listelerine de yansır; rol/aktiflik değiştirilemez. Fotoğraflar ayrı **private** `coach-avatars` bucket’ında, kullanıcıya ait klasörde saklanır; 1 saatlik imzalı adresle gösterilir. 3 MB PNG/JPEG/WebP; kaydedilmeyen eski yüklemeler otomatik silinmez.
+- Antrenör kendi grup/dersine **Sporcu talebi** gönderir. Beklerken aktif sporcu, dönem kaydı veya ders listesi oluşmaz. Başkasının talepleri görünmez; antrenör onay veremez.
+- Yönetici: **Sporcular → Sporcu onayları**. Onay sırasında yeni sporcu oluşturabilir veya mevcut aktif sporcuya eşleştirebilir; onay tek transaction’da sporcu/dönem kaydını ve varsa seçili ders listesini tamamlar. Ret gerekçesi zorunludur. Aynı talebe ikinci karar 409 döner.
+- Yönetici ana ekranı işlem kısayollarını ve bugünkü dersleri gösterir. Program/rapor menüleri açılır. **Ders oluştur** tek formda antrenör ve en fazla 200 kayıtlı sporcu seçer; grup görevlendirmesi yoksa yalnızca o gün için açık onay ister. Tüm kayıtlar atomiktir.
+- API’ler: GET/PUT `/api/coach/profile`, POST `/api/coach/avatar`, GET/POST `/api/coach/athlete-requests`, GET/POST `/api/admin/athlete-requests`, POST `/api/admin/lessons`. Cookie oturumu, aktif rol, same-origin yazma kontrolü ve sunucu tarafı validasyon kullanılır; RLS ayrıca uygulanır.
+
+Doğrulama: üretim derlemesi, 17 tarayıcı senaryosu ve 49 yerel test; PostgreSQL izinleri, özel fotoğraflar, kendi profilini düzenlerken yetki yükseltememe, onaysız sporcu izolasyonu, onay/ret, tekrar karar ve başarısız işlemde rollback. Yetkili tarayıcı senaryoları API mock kullanır; gerçek Supabase hesabıyla profil/talep işlemleri 005 uygulandıktan sonra ayrıca doğrulanmalıdır.

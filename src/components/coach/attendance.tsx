@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import {ApiError,api,dateLabel,label,rowName,type ClubData,type RecordRow} from '@/lib/club-client';
 type Choice={status:string;note:string};
-export default function CoachAttendance({lesson,data,refresh,onBack,onExpired,onDirtyChange}:{lesson:RecordRow;data:ClubData;refresh:()=>Promise<void>;onBack:()=>void;onExpired:()=>void;onDirtyChange:(dirty:boolean)=>void}){
+export default function CoachAttendance({lesson,data,refresh,onBack,onExpired,onDirtyChange,onRequestAthlete}:{lesson:RecordRow;data:ClubData;refresh:()=>Promise<void>;onBack:()=>void;onExpired:()=>void;onDirtyChange:(dirty:boolean)=>void;onRequestAthlete?:()=>void}){
  const [draft,setDraft]=useState<Record<string,Choice>>({}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[page,setPage]=useState(0);
  const roster=data.session_athletes.filter(r=>r.session_id===lesson.id);
  const visible=roster.slice(page*50,page*50+50);
@@ -20,7 +20,7 @@ export default function CoachAttendance({lesson,data,refresh,onBack,onExpired,on
   finally{setBusy(false);}
  }
  const canSave=editable&&selected>0&&selected<=100&&Object.values(draft).every(v=>['PRESENT','ABSENT','EXCUSED'].includes(v.status));
- return <div><button className="text-button back-button" onClick={()=>{if(!selected||window.confirm('Kaydedilmemiş yoklama seçimleri silinecek. Devam edilsin mi?'))onBack();}} disabled={busy}>← Derslerime dön</button><section className="panel"><div className="panel-heading"><div><span className="eyebrow">DERS YOKLAMASI</span><h2>{data.group_terms.find(t=>t.id===lesson.group_term_id)?.name??'Dersim'}</h2><p>{dateLabel(lesson.starts_at,true)} — {dateLabel(lesson.ends_at,true)}</p></div><span className="badge">{label(lesson.status)}</span></div>
+ return <div><button className="text-button back-button" onClick={()=>{if(!selected||window.confirm('Kaydedilmemiş yoklama seçimleri silinecek. Devam edilsin mi?'))onBack();}} disabled={busy}>← Derslerime dön</button><section className="panel"><div className="panel-heading"><div><span className="eyebrow">DERS YOKLAMASI</span><h2>{data.group_terms.find(t=>t.id===lesson.group_term_id)?.name??'Dersim'}</h2><p>{dateLabel(lesson.starts_at,true)} — {dateLabel(lesson.ends_at,true)}</p></div><div className="row-actions"><span className="badge">{label(lesson.status)}</span>{onRequestAthlete&&<button className="button secondary small" type="button" onClick={onRequestAthlete} disabled={lesson.status==='CANCELLED'||busy}>+ Sporcu talebi</button>}</div></div>
  <p className="muted">Yalnızca sizin girdiğiniz yoklamalar gösterilir. Boş durum “Yok” anlamına gelmez. Ders listenizdeki başka bir kayıt için düzenleme yetkiniz yoksa yöneticiyle görüşün.</p>
  {!editable&&<p className="notice">{lesson.status==='CANCELLED'?'İptal edilmiş dersin yoklaması değiştirilemez.':'Ders başlamadan yoklama alınamaz.'}</p>}
  {error&&<p role="alert" className="notice error">{error}</p>}{notice&&<p role="status" className="notice success">{notice}</p>}
