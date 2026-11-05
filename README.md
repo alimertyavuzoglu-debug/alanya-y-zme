@@ -1,3 +1,7 @@
+# Seçilen birleşim: 6 yerleşim + 5 renkler
+
+![Birleşik tasarım](assets/tasarim-6-yerlesim-5-renkler.png)
+
 # Deniz Aslanları — Tasarım önerileri
 
 Bu dal yalnızca altı tasarım önerisini içerir. Canlı kulüp uygulaması değildir.
