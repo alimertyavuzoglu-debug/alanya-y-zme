@@ -1,3 +1,11 @@
+# Antrenör paneli
+
+[Yeni antrenör SQL kurulumu](antrenor-kurulum.sql)
+
+![Antrenör paneli — test verileri](assets/antrenor-paneli.png)
+
+[Mobil görünüm — test verileri](assets/antrenor-mobil.png)
+
 # Uygulama ekranları
 
 ![Ana sayfa](assets/uygulama-ana-sayfa.png)
