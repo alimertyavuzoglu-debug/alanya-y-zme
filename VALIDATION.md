@@ -65,3 +65,7 @@ netlify.toml eklendi, Python tomllib ile build/publish alanları doğrulandı. P
 ## Netlify main yayını 404 teşhisi ve adaptör düzeltmesi
 
 Yayın koruması kapandıktan sonra eski tasarım galerisi görünüyordu. main dalına dokümantasyon push'u sonrası site 404'e geçti. Root/login/API 404, /BUILD_ID 200 gözlendi; Next.js çıktısının statik dosya olarak yayımlandığı doğrulandı. Resmi @netlify/plugin-nextjs 5.16.6 sabitlenerek yüklendi, netlify.toml'a explicit plugin eklendi. npm tarball integrity/TLS doğrulaması korunmuştur. Plugin onBuild/onPreBuild/onPostBuild hook'ları yüklendi, TOML/package sürümü kontrol edildi, npm run build geçti. Uzak adaptörün çalıştığı yeni yayın henüz ayrıca doğrulanacak; yerel Next build, Netlify Functions dağıtımının geçtiği anlamına gelmez.
+
+### Adaptör sonrası uzaktan doğrulama
+
+Resmi adaptör eklendikten sonra public ana sayfa HTTP 200, Next.js işaretleri ve doğru uygulama başlığı gözlendi. /api/auth/me JSON HTTP 503 Supabase bağlantısı yapılandırılmadı döndürdü; sunucu route'larının çalıştığı fakat public build değerlerinin eksik olduğu doğrulandı. Doğrulanmış Supabase URL ve yalnızca sb_publishable public key netlify.toml build.environment alanına eklendi. Service-role/sb_secret anahtarı kullanılmadı. Yeni yayında API ve origin kontrolleri yeniden doğrulanacak.

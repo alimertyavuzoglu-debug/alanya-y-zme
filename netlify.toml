@@ -5,6 +5,9 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+  # Public project identifiers; never put a secret/service-role key here.
+  NEXT_PUBLIC_SUPABASE_URL = "https://mdgbjipphbakayyhnjjc.supabase.co"
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_QW4HijWkoslxfITF8-FvDA_rOvq-_MS"
 
 # Explicit adapter: the project was originally detected as a static gallery.
 # API routes and SSR need Netlify Functions; .next must not be served as raw files.

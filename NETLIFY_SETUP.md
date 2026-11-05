@@ -40,3 +40,7 @@ Doğru yayının işaretleri: ana sayfada çalışan tanıtım sitesi, `/login` 
 ## Statik Next.js çıktısı / 404 teşhisi
 
 Bu proje ilk kez tasarım galerisi dalından oluşturulduğundan otomatik framework algısı statik kaldı. Ana sayfa ve /login 404 iken kökte /BUILD_ID dosyasının 200 dönmesi, .next klasörünün sunucu adaptörü olmadan dosya olarak yayımlandığını doğruladı. Düzeltme: netlify.toml içindeki [[plugins]] @netlify/plugin-nextjs ve sabitlenmiş resmi paket. Yeni deploy build log'unda bu adaptörün çalışması ve Netlify Functions paketlemesi görülmelidir. Plugin'i kaldırmayın, publish alanına bir SPA redirect eklemeyin.
+
+## Public Supabase build değerleri
+
+İlk Next.js yayını API'de 503 SUPABASE_NOT_CONFIGURED döndürdü. Projenin public URL ve publishable key değerleri artık netlify.toml build.environment içinde tanımlıdır; bu değerler public istemciler için tasarlanmıştır. Gizli/service-role anahtarı değildir. NEXT_PUBLIC değişkenleri Next.js derlemesine gömüldüğünden değişikliklerinde yeniden deploy gerekir. Gerçek gizli anahtarlar bu dosyaya yazılmamalıdır. Proje veya publishable key değişirse bu iki build değeri de güncellenmelidir.
