@@ -1,3 +1,11 @@
+# Sade paneller ve yeni özellikler
+
+[005 ek SQL kurulumu](profil-sporcu-kurulum.sql) — 001–004 tekrar çalıştırılmaz.
+
+[Yönetici ana ekranı](assets/sade-yonetici.png) · [Tek formda ders oluşturma](assets/tek-form-ders.png) · [Antrenör profili / mobil](assets/antrenor-profil-mobil.png) · [Sporcu talepleri](assets/sporcu-talepleri.png)
+
+Ekran görüntüleri test verileriyle alınmıştır.
+
 # Antrenör paneli
 
 [Yeni antrenör SQL kurulumu](antrenor-kurulum.sql)
