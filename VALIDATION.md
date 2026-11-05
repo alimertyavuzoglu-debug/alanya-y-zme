@@ -55,3 +55,9 @@ Kullanıcı 6 numaralı yerleşim + 5 numaralı renkleri seçti. Referans birle�
 Son sağlık kontrolünde özel fetch'e eklenen timeout sinyalinin PostgREST retry katmanına aktarılmaması yüzünden bekleme uzuyordu. Query-level abortSignal ve bu public okuma için retry:false ile düzeltildi. Son üretim build geçti; çalışan sunucuda beklenen ana başlığı içeren HTTP 200 yanıtı 4.13 saniyede alındı (içerik servisi erişimi başarısızken başlangıç içeriğine dönüş). Anonim /api/admin/content HTTP 401 doğrulandı. Gerçek içerik kaydı için uzak 003 migration hâlâ gerekli.
 
 Uygulama kodu GitHub main dalına, ekran görüntüleri ve ek SQL design-preview-20261105 dalına kaydedildi. .env.local Git'e alınmadı; staged içerikte gerçek sb_secret anahtarı olmadığı denetlendi. Netlify yayını yapılmadı.
+
+## Netlify yayın hazırlığı
+
+Kullanıcı 003 kurulumunun çalıştığını bildirdi. Gerçek Supabase public site_content okuması HTTP 200, bir homepage satırı, revision 0 döndürdü; kalıcı içerik satırının varlığı doğrulandı. Henüz gerçek yönetici girişi/yazması ve Storage yüklemesi sınanmadı.
+
+netlify.toml eklendi, Python tomllib ile build/publish alanları doğrulandı. Production, deploy-preview ve açık APP_ORIGIN için ortak origin kontrolü eklendi; invalid origin fail-closed. Son npm test 32/32 geçti. Depo varsayılan dalını main yapma isteği GitHub entegrasyon yetkisi yüzünden HTTP 403 ile reddedildi; main zaten mevcut ve import sırasında açıkça seçilecek. Ortamda Netlify token/site oturumu yok; NETLIFY_SETUP.md kullanıcı hesabında yapılacak import ve env adımlarını içerir. Netlify projesi oluşturulduğu veya yayımlandığı iddia edilmez.

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { expectedOrigin } from './origin';
 import { configurationPresent, supabase } from './supabase';
 
 export function failure(message: string, status: number) {
@@ -8,9 +9,8 @@ export function failure(message: string, status: number) {
 export function mutationGuard(request: Request) {
   const origin = request.headers.get('origin');
   // Cookie-authenticated writes require an explicit same-origin request.
-  const url = new URL(request.url);
-  const expectedOrigin = process.env.APP_ORIGIN ?? `${url.protocol}//${request.headers.get('host') ?? url.host}`;
-  if (!origin || origin !== expectedOrigin) return failure('İstek kaynağı doğrulanamadı.', 403);
+  const trusted = expectedOrigin(request);
+  if (!origin || !trusted || origin !== trusted) return failure('İstek kaynağı doğrulanamadı.', 403);
   if (!request.headers.get('content-type')?.startsWith('application/json')) return failure('JSON gerekli.', 415);
   return null;
 }

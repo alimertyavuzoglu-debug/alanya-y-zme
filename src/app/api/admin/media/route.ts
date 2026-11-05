@@ -1,9 +1,10 @@
 import {NextResponse} from 'next/server';
+import {expectedOrigin} from '@/lib/origin';
 import {randomUUID} from 'node:crypto';
 import {authenticated,databaseFailure,failure} from '@/lib/http';
 export async function POST(request:Request){
- const url=new URL(request.url);const expected=process.env.APP_ORIGIN??`${url.protocol}//${request.headers.get('host')??url.host}`;
- if(request.headers.get('origin')!==expected)return failure('İstek kaynağı doğrulanamadı.',403);
+ const expected=expectedOrigin(request);
+ if(!expected||request.headers.get('origin')!==expected)return failure('İstek kaynağı doğrulanamadı.',403);
  const auth=await authenticated();if(auth.response)return auth.response;
  const {data:roles,error}=await auth.client.from('user_roles').select('role').eq('user_id',auth.user.id);
  if(error)return databaseFailure(error);
