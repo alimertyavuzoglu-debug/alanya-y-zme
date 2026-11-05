@@ -5,7 +5,7 @@ Uygulama GitHub `alimertyavuzoglu-debug/alanya-y-zme` deposunun **main** dalınd
 1. https://app.netlify.com/ üzerinden hesabınıza girin; gerekirse yeni hesap oluşturun.
 2. Yeni proje oluşturup GitHub'dan mevcut projeyi içe aktarmayı seçin. Gerekirse GitHub uygulamasına yalnızca bu depo için erişim verin.
 3. Depo: alimertyavuzoglu-debug/alanya-y-zme. Branch / production branch: **main**.
-4. Base directory: boş / depo kökü. Build command: `npm run build`. Publish directory: `.next`. Node sürümü `netlify.toml` içinde 22'dir. Netlify Next.js/OpenNext runtime'ını otomatik algılar. Düz statik dosya yüklemesi veya SPA redirect kuralı kullanmayın; API route'ları gerekir.
+4. Base directory: boş / depo kökü. Build command: `npm run build`. Publish directory: `.next`. Node sürümü `netlify.toml` içinde 22'dir. Resmi Next.js/OpenNext adaptörü netlify.toml içinde açıkça etkinleştirilmiştir ve package-lock.json ile 5.16.6 sürümüne sabitlenmiştir. Düz statik dosya yüklemesi veya SPA redirect kuralı kullanmayın; API route'ları gerekir.
 5. İlk deploy'dan önce, build ve functions/runtime için ortam değişkenlerini ekleyin:
    - NEXT_PUBLIC_SUPABASE_URL: https://mdgbjipphbakayyhnjjc.supabase.co
    - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: Supabase Settings/API Keys içindeki publishable key (sb_publishable_ ile başlar; eski projelerde anon key).
@@ -35,3 +35,8 @@ Yerel testler uzaktaki gerçek oturum ve medya yazımı yerine geçmez. Bu kontr
 Güncel arayüz yolu: Project configuration → Developer settings → Continuous deployment → Branches and deploy contexts → Configure. Production branch `main` olmalı ve Save ile kaydedilmelidir. Dal değişikliği önceki yayını tek başına değiştirmeyebilir; Deploys → Trigger deploy ile veya main dalına yeni push ile yeni build başlatın.
 
 Doğru yayının işaretleri: ana sayfada çalışan tanıtım sitesi, `/login` HTTP 200 ve anonim `/api/auth/me` JSON HTTP 401. “Deniz Aslanları — Tasarım Seçimi” başlığı ve `/login` HTTP 404, eski statik galerinin hâlâ yayında olduğunu gösterir. Bu durumda Deploys ekranında yeni build'in dalını, commit'ini, durumunu ve hata log'unu inceleyin.
+
+
+## Statik Next.js çıktısı / 404 teşhisi
+
+Bu proje ilk kez tasarım galerisi dalından oluşturulduğundan otomatik framework algısı statik kaldı. Ana sayfa ve /login 404 iken kökte /BUILD_ID dosyasının 200 dönmesi, .next klasörünün sunucu adaptörü olmadan dosya olarak yayımlandığını doğruladı. Düzeltme: netlify.toml içindeki [[plugins]] @netlify/plugin-nextjs ve sabitlenmiş resmi paket. Yeni deploy build log'unda bu adaptörün çalışması ve Netlify Functions paketlemesi görülmelidir. Plugin'i kaldırmayın, publish alanına bir SPA redirect eklemeyin.
