@@ -69,3 +69,17 @@ Yayın koruması kapandıktan sonra eski tasarım galerisi görünüyordu. main 
 ### Adaptör sonrası uzaktan doğrulama
 
 Resmi adaptör eklendikten sonra public ana sayfa HTTP 200, Next.js işaretleri ve doğru uygulama başlığı gözlendi. /api/auth/me JSON HTTP 503 Supabase bağlantısı yapılandırılmadı döndürdü; sunucu route'larının çalıştığı fakat public build değerlerinin eksik olduğu doğrulandı. Doğrulanmış Supabase URL ve yalnızca sb_publishable public key netlify.toml build.environment alanına eklendi. Service-role/sb_secret anahtarı kullanılmadı. Yeni yayında API ve origin kontrolleri yeniden doğrulanacak.
+
+## Antrenör paneli — Aşama 4
+
+Canlı public site_content satırı revision 5 ve 31 içerik alanı ile okundu; önceki içerik düzenlemelerinin veritabanına kaydolduğu doğrulandı. Bu, görsel yüklemenin ayrıca doğrulandığı anlamına gelmez.
+
+/coach eklendi; ortak giriş rol yönlendirmesi, kendi ders/sporcu/program görünümü ve kendi grup planı oluşturma/düzenleme uygulandı. Yeni security-invoker RPC ile yoklama seçimi tek transaction'da kaydedilir. Genel readBody sınırı aynı 32 KiB'dir; sadece antrenör batch endpoint'i sabit 256 KiB sınırı kullanır.
+
+- Son npm test: 39/39 geçti. Yeni batch başarısı/rollback/duplicate, peer kaydı yazma engeli, çift rolde sahiplik korunması, historical metadata izolasyonu, farklı DB timezone'larında İstanbul günü ve istemci kapsamı test edildi.
+- npm run build geçti. Sonrasında SQL/test değişikliği yapıldı; uygulama TypeScript/JS kaynakları aynı build'dedir.
+- Tarayıcı: 13/13 geçti (public homepage testi bilerek hariç; ana sayfa bu aşamada değiştirilmedi ve canlı içerik kullanıcı tarafından düzenlenebilir). Admin regresyonları, CMS kaydı, coach rol yönlendirmesi, kendi kayıtları, batch hata/yeniden deneme, plan ekleme, gelecek ders kilidi, 390px mobil taşma yokluğu ve yetkisiz hesap kapısı test edildi. Authenticated UI testlerinde API mock kullanıldı; gerçek Supabase antrenör oturumu test edilmedi.
+- Görsel kanıt: test-results/coach-attendance-desktop.png ve coach-mobile.png. Gerçek kullanıcı verisi içermez.
+- Migration 004_coach_workflow uzakta henüz uygulanmadı. Ayrı COACH hesabı/görevlendirmesi ve canlı batch/plan kaydı doğrulaması bekleniyor. Mevcut içerik kayıtları değiştirilmedi.
+
+Mobil ekran görüntüsünde kaydet çubuğunun ilk sporcu satırını örttüğü görüldü; sadece coach save bar statik akışa alındı. Son build geçti; etkilenen 6 coach tarayıcı senaryosu tekrar 6/6 geçti. İlk satır, seçimler ve alt kaydet alanı yeni mobil/masaüstü görüntülerinde birlikte okunabiliyor. Görsel kanıtlar test verisidir. Önceki 13/13 kapsamındaki yönetici/CMS regresyonları değişmedi. Gerçek antrenör girişi/004 uzak migration henüz doğrulanmadı.

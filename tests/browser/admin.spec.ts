@@ -10,7 +10,7 @@ async function fixture(page:Page, role='ADMIN', seed:Record<string,Row[]>={}) {
  await page.route('**/api/**',async route=>{
   const req=route.request();const url=new URL(req.url());const path=url.pathname;const method=req.method();
   const respond=(body:unknown,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
-  if(path==='/api/auth/me')return respond(loggedIn?{user:{id:uid(1),display_name:'Test Yöneticisi'},roles:[role]}:{error:'Oturum açmanız gerekiyor.'},loggedIn?200:401);
+  if(path==='/api/auth/me')return respond(loggedIn?{user:{id:uid(1),display_name:role==='COACH'?'Test Antrenörü':'Test Yöneticisi'},roles:[role]}:{error:'Oturum açmanız gerekiyor.'},loggedIn?200:401);
   if(path==='/api/auth/login'){loggedIn=true;return respond({ok:true});}
   if(path==='/api/auth/logout'){loggedIn=false;return respond({ok:true});}
   if(path==='/api/admin/coaches')return respond({data:[{id:uid(2),display_name:'Test Antrenörü',is_active:true}]});
@@ -21,6 +21,7 @@ async function fixture(page:Page, role='ADMIN', seed:Record<string,Row[]>={}) {
   const body=req.postDataJSON();requests.push({method,resource,body});
   if(method==='POST'){
    const row={id:uid(100+requests.length),...body};
+   if(resource==='training_plans')Object.assign(row,{created_by:uid(1)});
    if(resource==='athlete_attendance')Object.assign(row,{recorded_at:new Date().toISOString()});
    data[resource].push(row);return respond({data:[row]},201);
   }
@@ -42,7 +43,7 @@ test('real unauthenticated admin redirects to login and real API refuses access'
 test('login routes admin to dashboard; logout returns to login',async({page})=>{
  await fixture(page);await page.goto('/login');
  await page.getByLabel('E-posta adresi').fill('test@example.invalid');await page.getByLabel('Parola',{exact:true}).fill('test-fixture-not-a-real-password');
- await page.getByRole('button',{name:'Yönetici paneline giriş'}).click();
+ await page.getByRole('button',{name:'Panele giriş yap'}).click();
  await expect(page.getByRole('heading',{name:'Genel bakış',exact:true})).toBeVisible();
  await expect(page.getByText('Bugün için planlanmış ders bulunmuyor.')).toBeVisible();
  await page.getByRole('button',{name:'Çıkış yap'}).click();await expect(page).toHaveURL(/\/login$/);
@@ -132,4 +133,35 @@ test('CMS admin edits text, uploads image and publishes with revision; conflict 
  await expect(page.getByRole('status')).toContainText('Görsel yüklendi');expect(stored.heroImage).toBe('/images/hero.png');
  await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.getByRole('status')).toContainText('kaydedildi');expect(stored.heroImage).toBe('https://example.com/swimmer.png');
  revision++;await page.getByLabel('Ana başlık (satır sonu kullanılabilir)').fill('Çakışan taslak');await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.locator('.site-editor [role=alert]')).toContainText('başka bir oturumda');expect(stored.heroTitle).toBe('Yeni ana başlık');
+});
+
+
+function coachSeed(future=false):Record<string,Row[]>{
+ const year=new Date().getUTCFullYear(),start=`${year}-01-01`,end=`${year+1}-12-31`;
+ return {groups:[{id:uid(3),name:'Kendi grubum'},{id:uid(30),name:'Başka grup'}],group_terms:[{id:uid(4),group_id:uid(3),name:'Yüzme dönemi',start_date:start,end_date:end,status:'ACTIVE'},{id:uid(40),group_id:uid(30),name:'Başka dönem'}],athletes:[{id:uid(5),first_name:'Ada',last_name:'Test',is_active:true},{id:uid(15),first_name:'Ege',last_name:'Test',is_active:true},{id:uid(50),first_name:'Gizli',last_name:'Sporcu',is_active:true}],enrollments:[{id:uid(6),group_term_id:uid(4),athlete_id:uid(5),joined_on:start},{id:uid(16),group_term_id:uid(4),athlete_id:uid(15),joined_on:start},{id:uid(60),group_term_id:uid(40),athlete_id:uid(50),joined_on:start}],coach_assignments:[{id:uid(7),group_term_id:uid(4),coach_id:uid(1),starts_on:start,ends_on:end},{id:uid(70),group_term_id:uid(40),coach_id:uid(2),starts_on:start,ends_on:end}],sessions:[{id:uid(8),group_term_id:uid(4),starts_at:new Date(Date.now()+(future?86400000:-7200000)).toISOString(),ends_at:new Date(Date.now()+(future?90000000:-3600000)).toISOString(),status:'SCHEDULED'},{id:uid(80),group_term_id:uid(40),starts_at:new Date().toISOString(),ends_at:new Date(Date.now()+3600000).toISOString(),status:'SCHEDULED'}],session_coaches:[{session_id:uid(8),coach_id:uid(1),participation_status:'UNCONFIRMED'},{session_id:uid(80),coach_id:uid(2),participation_status:'ATTENDED'}],session_athletes:[{session_id:uid(8),athlete_id:uid(5),enrollment_id:uid(6)},{session_id:uid(8),athlete_id:uid(15),enrollment_id:uid(16)}],training_plans:[{id:uid(9),group_term_id:null,title:'Genel teknik',content:'Genel kulüp programı',created_by:uid(2)}]};
+}
+test('coach login routes to own dashboard and hides unrelated records',async({page})=>{
+ await fixture(page,'COACH',coachSeed());await page.goto('/login');await page.getByLabel('E-posta adresi').fill('coach@example.invalid');await page.getByLabel('Parola',{exact:true}).fill('fixture-only-password');await page.getByRole('button',{name:'Panele giriş yap'}).click();await expect(page).toHaveURL(/\/coach$/);await expect(page.getByRole('heading',{name:'Genel bakış',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Sporcularım',exact:false}).click();await expect(page.getByRole('cell',{name:'Ada Test'})).toBeVisible();await expect(page.getByText('Gizli Sporcu')).toHaveCount(0);await expect(page.getByRole('button',{name:'Site içeriği',exact:false})).toHaveCount(0);
+});
+test('coach bulk attendance keeps failed selections, retries and confirms saved records',async({page})=>{
+ const {data}=await fixture(page,'COACH',coachSeed());let attempts=0;
+ await page.route('**/api/coach/attendance',async route=>{
+  attempts++;if(attempts===1)return route.fulfill({status:403,json:{error:'Düzenleme yetkiniz yok. Seçimleriniz kaydedilmedi.'}});
+  const payload=route.request().postDataJSON();for(const entry of payload.entries)data.athlete_attendance.push({...entry,session_id:payload.session_id,recorded_by:uid(1),recorded_at:new Date().toISOString()});return route.fulfill({json:{data:data.athlete_attendance}});
+ });
+ await page.goto('/coach');await page.getByRole('button',{name:'Derslerim',exact:false}).click();await expect(page.getByText('Başka dönem',{exact:true})).toHaveCount(0);await page.getByRole('button',{name:'Yoklamayı aç'}).click();await page.getByRole('group',{name:'Ada Test yoklaması',exact:true}).getByRole('button',{name:'Var',exact:true}).click();await page.getByRole('group',{name:'Ege Test yoklaması',exact:true}).getByRole('button',{name:'Mazeretli',exact:true}).click();
+ page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'Sporcularım',exact:false}).click();await expect(page.getByRole('group',{name:'Ada Test yoklaması',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Seçilenleri kaydet'}).click();await expect(page.locator('p[role=alert]')).toContainText('kaydedilmedi');expect(data.athlete_attendance).toHaveLength(0);await expect(page.getByRole('group',{name:'Ada Test yoklaması',exact:true}).getByRole('button',{name:'Var',exact:true})).toHaveAttribute('aria-pressed','true');await page.getByRole('button',{name:'Seçilenleri kaydet'}).click();await expect(page.getByRole('status')).toContainText('2 sporcunun yoklaması kaydedildi');expect(data.athlete_attendance).toHaveLength(2);
+ await page.evaluate(()=>{window.scrollTo(0,0);(document.activeElement as HTMLElement)?.blur();});
+ await page.screenshot({path:'test-results/coach-attendance-desktop.png',fullPage:true});
+});
+test('coach adds own group plan; general plan stays read-only',async({page})=>{
+ const {requests}=await fixture(page,'COACH',coachSeed());await page.goto('/coach');await page.getByRole('button',{name:'Antrenman planları',exact:false}).click();await expect(page.getByRole('row').filter({hasText:'Genel teknik'}).getByText('Salt okunur')).toBeVisible();await page.getByRole('button',{name:'+ Plan ekle'}).click();await page.getByRole('dialog').getByRole('combobox').selectOption(uid(4));await page.getByLabel('Plan başlığı').fill('Nefes çalışması');await page.getByLabel('Antrenman içeriği').fill('Teknik ve nefes kontrolü.');await page.getByRole('button',{name:'Kaydet',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.getByRole('cell',{name:'Nefes çalışması',exact:true})).toBeVisible();expect(requests.some(r=>r.resource==='training_plans'&&r.body.group_term_id===uid(4))).toBe(true);
+});
+test('future coach lesson is read-only and mobile roster fits',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await fixture(page,'COACH',coachSeed(true));await page.goto('/coach');await page.getByRole('button',{name:'Derslerim',exact:false}).click();await page.getByRole('button',{name:'Yoklamayı aç'}).click();await expect(page.getByText('Ders başlamadan yoklama alınamaz.')).toBeVisible();await expect(page.getByRole('group',{name:'Ada Test yoklaması',exact:true}).getByRole('button',{name:'Var',exact:true})).toBeDisabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'test-results/coach-mobile.png',fullPage:true});
+});
+test('coach route rejects admin-only role and redirects anonymous session',async({page})=>{
+ await fixture(page,'ADMIN');await page.goto('/coach');await expect(page.getByRole('heading',{name:'Antrenör hesabı gerekli'})).toBeVisible();await page.unrouteAll();await page.goto('/coach');await expect(page).toHaveURL(/\/login$/);
 });

@@ -15,7 +15,7 @@ export function mutationGuard(request: Request) {
   return null;
 }
 
-export async function readBody(request: Request) {
+export async function readBody(request: Request, limit = 32768) {
   const reader = request.body?.getReader();
   if (!reader) throw new Error('INVALID_BODY');
   const chunks: Uint8Array[] = [];
@@ -24,7 +24,7 @@ export async function readBody(request: Request) {
     const item = await reader.read();
     if (item.done) break;
     size += item.value.byteLength;
-    if (size > 32768) { await reader.cancel(); throw new Error('BODY_TOO_LARGE'); }
+    if (size > limit) { await reader.cancel(); throw new Error('BODY_TOO_LARGE'); }
     chunks.push(item.value);
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;

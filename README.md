@@ -149,3 +149,42 @@ Ana sayfa `/`, kullanıcının seçtiği 6 numaralı yerleşim ve 5 numaralı ma
 - POST `/api/admin/media`: admin oturumu, aynı Origin ve ham görsel gövdesi; `{url}` döner. Genel JSON body helper yerine sınırlı binary akış kullanır.
 
 Uzak Supabase üzerinde 003 migration ve gerçek oturumla içerik kaydı/yüklemesi henüz doğrulanmadı; yerel DB ve tarayıcı testleri bu işlemin yerine geçmez. Supabase RLS'yi veya doğrulamayı kapatmayın.
+
+## Antrenör paneli (Aşama 4)
+
+- Ortak `/login` ekranı ADMIN hesabını `/admin`, COACH hesabını `/coach` adresine yönlendirir. İki rol varsa yönetici paneli önceliklidir; COACH rolü olan yönetici doğrudan `/coach` adresini de açabilir.
+- `/coach`: kendi ders listesi, sporcular, haftalık program ve antrenman planları. Genel kulüp planları salt okunur; antrenör geçerli görevlendirmesi olan gruplara plan ekler ve kendi planlarını düzenler.
+- Ders detayı: Var / Yok / Mazeretli seçimi, isteğe bağlı not; sayfa başına 50 sporcu ve bir işlemde en fazla 100 seçim. Seçimler yalnızca Seçilenleri kaydet ile veritabanına gider. Tek kayıt reddedilirse tamamı geri alınır, seçimler ekranda korunur.
+- Başlamamış/iptal dersler salt okunurdur. Antrenör kendi derse katılımını onaylayamaz; yönetici doğrular.
+- Yeni RPC, ADMIN+COACH çift rolü olsa bile başka yazarın yoklamasını devralmaz. Yönetici tüm kayıtlarını ayrı yönetici uçlarından yönetmeye devam eder.
+- Antrenör ekranı sadece kendi girdiği yoklamaları gösterir. Aynı derste başka yetkilinin kaydı varsa toplu işlem 403 dönebilir; yönetici üzerinden çözülür. Kaydı görünmeyen sporcu otomatik Yok sayılmaz.
+
+### Dördüncü migration
+
+Mevcut projede yalnızca `supabase/migrations/202611050004_coach_workflow.sql` uygulanmalıdır. İlk üç migration tekrar çalıştırılmaz. Bu migration toplu kayıt RPC'sini, yalnızca atanmış derslerin geçmiş/gelecek grup metadatası okuma politikalarını ve İstanbul gün sınırı düzeltmesini ekler. Sporcu/yoklama tablolarını silmez veya sıfırlamaz. Uygulanmamış projede toplu yoklama 503 kurulum hatası verir; yanlış başarı mesajı göstermez.
+
+### Ayrı antrenör hesabı
+
+İlk sürümde Auth kullanıcı oluşturma, Supabase Authentication / Users ekranından yapılır; parola sohbette paylaşılmaz. Yeni kullanıcının e-postasını ve görünen adını aşağıdaki SQL'de kendiniz doldurun. Bu işlem rol atamayı yalnızca yetkili SQL Editor oturumunda yapar, web ziyaretçisine açık değildir.
+
+```sql
+DO $$
+DECLARE coach_user uuid;
+BEGIN
+ SELECT id INTO coach_user FROM auth.users
+ WHERE lower(email)=lower('ANTRENOR_EPOSTASI');
+ IF coach_user IS NULL THEN
+  RAISE EXCEPTION 'Önce Authentication / Users içinde hesabı oluşturun.';
+ END IF;
+ INSERT INTO public.profiles(id,display_name)
+ VALUES(coach_user,'ANTRENOR_ADI') ON CONFLICT(id) DO NOTHING;
+ INSERT INTO public.user_roles(user_id,role)
+ VALUES(coach_user,'COACH') ON CONFLICT(user_id,role) DO NOTHING;
+END $$;
+```
+
+Ardından yönetici panelinde grubu/dönemi ve sporcuyu kaydedin, antrenörü döneme ve somut derse atayın, dersin sporcu listesini oluşturun. Antrenör ayrı hesabıyla giriş yaptığında bu dersler görünür. Sadece hesap açmak bir ders veya gruba otomatik atama yapmaz.
+
+### Test kapsamı
+
+Yerel PGlite testleri gerçek PostgreSQL RLS/transaction kurallarını çalıştırır. UI tarayıcı testlerinde yetkili oturum/API mock kullanılır. `npm run test:browser -- --grep-invert 'public homepage'` yönetici ve antrenör akışlarını kapsar; kullanıcı tarafından düzenlenebilen canlı ana sayfa içerik testi bu koşudan bilerek hariç tutulur. Canlı antrenör hesabıyla yoklama/plan yazımı ayrıca doğrulanmalıdır.

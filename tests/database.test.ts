@@ -94,8 +94,17 @@ test('PostgreSQL migration, data integrity, role isolation and attendance lifecy
   await run(`update public.athlete_attendance set status='EXCUSED' where session_id='${ids.lesson}'`);
   await assert.rejects(run(`insert into public.athlete_attendance(session_id,athlete_id,status) values ('${ids.lesson}','${ids.athlete}','ABSENT')`),/duplicate key/);
  });
+ await t.test('coach bulk attendance is atomic and rejects duplicate athletes',async()=>{
+  const entry={athlete_id:ids.athlete,status:'PRESENT',note:null};
+  await assert.rejects(db.query(`select * from public.record_my_attendance($1,$2::jsonb)`,[ids.lesson,JSON.stringify([entry,{athlete_id:ids.hidden,status:'ABSENT'}])]),/foreign key/);
+  assert.equal((await db.query<{status:string}>(`select status from public.athlete_attendance`)).rows[0].status,'EXCUSED');
+  await assert.rejects(db.query(`select * from public.record_my_attendance($1,$2::jsonb)`,[ids.lesson,JSON.stringify([entry,entry])]),/Duplicate athlete/);
+  const result=await db.query<{recorded_by:string}>(`select * from public.record_my_attendance($1,$2::jsonb)`,[ids.lesson,JSON.stringify([entry])]);
+  assert.equal(result.rows.length,1);assert.equal(result.rows[0].recorded_by,ids.coach);
+ });
  await as('other');
  await t.test('unassigned coach cannot read or write another coach records', async()=> {
+  await assert.rejects(db.query(`select * from public.record_my_attendance($1,$2::jsonb)`,[ids.lesson,JSON.stringify([{athlete_id:ids.athlete,status:'ABSENT'}])]),/Own coach lesson required/);
   for (const table of ['athletes','sessions','groups','group_terms','athlete_attendance']) assert.equal(await count(table),0,table);
   await assert.rejects(run(`insert into public.athlete_attendance(session_id,athlete_id,status) values ('${ids.lesson}','${ids.athlete}','ABSENT')`),/row-level security/);
  });
@@ -114,10 +123,41 @@ test('PostgreSQL migration, data integrity, role isolation and attendance lifecy
   assert.ok(await count('audit_logs')>0);
   await assert.rejects(run(`delete from public.audit_logs`),/permission denied/);
  });
+ await as('other');
+ await t.test('assigned peer cannot overwrite another coach attendance',async()=>{
+  await assert.rejects(db.query(`select * from public.record_my_attendance($1,$2::jsonb)`,[ids.lesson,JSON.stringify([{athlete_id:ids.athlete,status:'ABSENT'}])]),{code:'42501'});
+  assert.equal(await count('athlete_attendance'),0);
+ });
+ await as('admin');
+ await t.test('coach RPC preserves ownership even for dual admin-coach role',async()=>{
+  await run(`insert into public.user_roles values ('${ids.admin}','COACH');
+   insert into public.coach_assignments(group_term_id,coach_id,starts_on,ends_on) values ('${ids.term}','${ids.admin}',current_date-30,current_date+30);
+   insert into public.session_coaches(session_id,coach_id) values ('${ids.lesson}','${ids.admin}');`);
+  await assert.rejects(db.query(`select * from public.record_my_attendance($1,$2::jsonb)`,[ids.lesson,JSON.stringify([{athlete_id:ids.athlete,status:'ABSENT'}])]),{code:'42501'});
+  assert.equal((await db.query<{recorded_by:string}>(`select recorded_by from public.athlete_attendance`)).rows[0].recorded_by,ids.coach);
+ });
  await t.test('cancelled lessons cannot receive attendance or reopen',async()=> {
   await run(`update public.sessions set status='CANCELLED' where id='${ids.lesson}'`);
   await assert.rejects(run(`update public.athlete_attendance set status='ABSENT' where session_id='${ids.lesson}'`),/cancelled or future/);
   await assert.rejects(run(`update public.sessions set status='SCHEDULED' where id='${ids.lesson}'`),/replacement/);
+ });
+ await t.test('coach can read own historical lesson metadata but peers cannot',async()=>{
+  await run(`insert into public.groups(id,name) values ('00000000-0000-4000-8000-000000000010','Geçmiş grup');
+  insert into public.group_terms(id,group_id,name,start_date,end_date) values ('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000010','Geçmiş dönem',current_date-70,current_date-40);
+  insert into public.coach_assignments(group_term_id,coach_id,starts_on,ends_on) values ('00000000-0000-4000-8000-000000000011','${ids.coach}',current_date-70,current_date-40);
+  insert into public.sessions(id,group_term_id,starts_at,ends_at) values ('00000000-0000-4000-8000-000000000012','00000000-0000-4000-8000-000000000011',((current_date-50)::timestamp at time zone 'Europe/Istanbul')+interval '12 hours',((current_date-50)::timestamp at time zone 'Europe/Istanbul')+interval '13 hours');
+  insert into public.session_coaches(session_id,coach_id) values ('00000000-0000-4000-8000-000000000012','${ids.coach}');`);
+  await as('coach');
+  assert.equal((await db.query(`select * from public.group_terms where id='00000000-0000-4000-8000-000000000011'`)).rows.length,1);
+  assert.equal((await db.query(`select * from public.groups where id='00000000-0000-4000-8000-000000000010'`)).rows.length,1);
+  await as('other');assert.equal((await db.query(`select * from public.groups where id='00000000-0000-4000-8000-000000000010'`)).rows.length,0);
+  await as('admin');
+ });
+ await t.test('coach term permission uses Istanbul date regardless of database timezone',async()=>{
+  await run(`insert into public.group_terms(id,group_id,name,start_date,end_date) values ('00000000-0000-4000-8000-000000000013','${ids.group}','Günlük',(now() at time zone 'Europe/Istanbul')::date,(now() at time zone 'Europe/Istanbul')::date);
+  insert into public.coach_assignments(group_term_id,coach_id,starts_on,ends_on) values ('00000000-0000-4000-8000-000000000013','${ids.coach}',(now() at time zone 'Europe/Istanbul')::date,(now() at time zone 'Europe/Istanbul')::date);`);
+  await as('coach');for(const zone of ['Pacific/Kiritimati','America/Adak']){await run(`set time zone '${zone}'`);assert.equal((await db.query<{ok:boolean}>(`select private.coaches_term('00000000-0000-4000-8000-000000000013') ok`)).rows[0].ok,true);}
+  await run(`set time zone 'UTC'`);
  });
  await run(`reset role; update public.profiles set is_active=false where id='${ids.coach}'`);
  await as('coach');
