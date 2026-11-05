@@ -49,3 +49,9 @@ Kullanıcı 6 numaralı yerleşim + 5 numaralı renkleri seçti. Referans birle�
 - Görsel karşılaştırma: /workspace/verification/design-comparison-final.png ve design-header-final.png; tasarım QA passed. Mobil 390px taşma yok, menü ve telefon CTA çalışıyor. CMS ekran görüntüsü /workspace/verification/site-editor-desktop.png test verisi içerir.
 - Gerçek Supabase site_content sorgusu HTTP 404 / PGRST205 döndü. 003_site_content migration henüz uzakta uygulanmadı. Dolayısıyla gerçek yöneticiyle içerik yazma ve Storage yüklemesi doğrulanmadı. Web uygulaması henüz Netlify'ye yayımlanmadı.
 - Ana sayfa, bağlantı/kurulum hatasında varsayılan içerikle açılır; CMS böyle bir durumda 503 verir ve başarılı kayıt göstermez. Görseller temsili, telefon eski sitenin public tel bağlantısından alınmıştır ve admin tarafından değiştirilebilir.
+
+### İçerik servisi zaman aşımı düzeltmesi
+
+Son sağlık kontrolünde özel fetch'e eklenen timeout sinyalinin PostgREST retry katmanına aktarılmaması yüzünden bekleme uzuyordu. Query-level abortSignal ve bu public okuma için retry:false ile düzeltildi. Son üretim build geçti; çalışan sunucuda beklenen ana başlığı içeren HTTP 200 yanıtı 4.13 saniyede alındı (içerik servisi erişimi başarısızken başlangıç içeriğine dönüş). Anonim /api/admin/content HTTP 401 doğrulandı. Gerçek içerik kaydı için uzak 003 migration hâlâ gerekli.
+
+Uygulama kodu GitHub main dalına, ekran görüntüleri ve ek SQL design-preview-20261105 dalına kaydedildi. .env.local Git'e alınmadı; staged içerikte gerçek sb_secret anahtarı olmadığı denetlendi. Netlify yayını yapılmadı.
