@@ -246,3 +246,13 @@ Eski `alanyadenizaslanlari.netlify.app` hostu yol ve sorguyu koruyarak panel ori
 **Supabase:** Authentication → URL Configuration içinde Site URL `https://panel.alanyadenizaslanlarisk.com`, Redirect URLs listesinde `https://panel.alanyadenizaslanlarisk.com/**` olmalıdır. Mevcut kullanıcılar/veriler korunur; farklı hostlarda oturum çerezleri ayrı olduğundan panel adresinde mevcut hesapla giriş yapılır.
 
 Doğrulama: üretim derlemesi, 11 origin/içerik/validasyon testi, 12 yerel üretim HTTP kontrolü ve iki tarayıcı görünümü. Public kök, panel kök/giriş, giriş ve davet yönlendirmeleri, eski içerik bağlantıları, sorgu korunması ve portal origin yazma sınırı doğrulandı.
+
+## Deneme dersi başvuru formu
+
+Ana sayfadaki Deneme dersine başvur düğmesi `#basvuru` bölümündeki gerçek forma gider. Form ad, telefon, kendisi/çocuğu için başvuru, gerekiyorsa çocuk yaşı, ders tercihi, isteğe bağlı not ve başvuru amacıyla iletişim onayı alır. Kimlik numarası, doğum tarihi veya sağlık bilgisi istenmez.
+
+Gönderim, kullanıcının eski sitesinde zaten kullanılan Web3Forms e-posta alıcı anahtarıyla yapılır (`NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY`, public form kimliği). Bu bir secret/service-role anahtarı değildir. Netlify build ortamında tanımlıdır. Başvurular bu aşamada Supabase’e sporcu veya kayıt olarak eklenmez; mevcut e-posta akışına iletilir.
+
+İstemci alanları doğrular; boş onay/telefon/çocuk yaşı ile göndermez. Sağlayıcı HTTP başarılı yanıt **ve** `success:true` vermeden başarılı gönderim göstermez. Hatalarda/zaman aşımında kullanıcı girdileri korunur. Honeypot, gönderim sırasında kilit ve 20 saniyelik zaman aşımı vardır. Native form POST fallback’i kişisel bilgilerin URL sorgusuna yazılmasını engeller.
+
+Doğrulama: payload validasyonu/çocuk yaşı/alan sınırları için 2 test; mobil tarayıcı senaryosunda CTA ile forma ulaşma, zorunlu alanlar, sağlayıcı reddi, ağ hatası, girdileri koruma ve kabul sonrası başarı test edilir. Web3Forms testte mock edilir; gerçek e-posta gönderilmez ve alıcıya teslim garantisi iddia edilmez.

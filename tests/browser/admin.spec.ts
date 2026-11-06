@@ -104,8 +104,8 @@ test('public homepage desktop and mobile navigation and contact work',async({pag
  await expect(page.getByRole('heading',{name:/Birlikte daha güçlü/})).toBeVisible();
  await page.evaluate(()=>document.fonts.ready);await page.waitForFunction(()=>[...document.images].every(i=>i.complete&&i.naturalWidth>0));
  await page.screenshot({path:'test-results/homepage-desktop.png',fullPage:false});
- await page.getByRole('link',{name:'Deneme dersine başvur',exact:true}).click();await expect(page).toHaveURL(/#iletisim$/);
- await expect(page.locator('a[href="tel:+905459477973"]')).toBeVisible();
+ await page.getByRole('link',{name:'Deneme dersine başvur',exact:true}).click();await expect(page).toHaveURL(/#basvuru$/);await expect(page.getByRole('form',{name:'Deneme dersi başvuru formu'})).toBeVisible();
+ await expect(page.locator('a[href="tel:+905459477973"]').first()).toBeVisible();
  await page.setViewportSize({width:390,height:844});await page.goto('/');
  await page.getByRole('button',{name:'Menü',exact:true}).click();await page.getByRole('navigation',{name:'Ana menü'}).getByRole('link',{name:'Eğitimler'}).click();await expect(page).toHaveURL(/#egitimler$/);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -243,4 +243,25 @@ test('revoked invitation has no signup controls; callback rejects external redir
  const callback=await request.get('/auth/callback?next=https://evil.example',{maxRedirects:0});expect(callback.status()).toBe(303);expect(new URL(callback.headers().location).pathname).toBe('/login');expect(callback.headers()['referrer-policy']).toBe('no-referrer');
  const guarded=await request.post('/api/admin/coach-invitations',{data:{},headers:{Origin:'https://evil.example'}});expect(guarded.status()).toBe(403);
  expect((await request.get('/api/admin/coach-invitations')).status()).toBe(401);
+});
+
+test('trial CTA reaches a fillable form, preserves failed submission and confirms only accepted requests',async({page})=>{
+ await page.setViewportSize({width:390,height:844});const submissions:Row[]=[];
+ await page.route('https://api.web3forms.com/submit',async route=>{
+  const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type'};
+  if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers});
+  submissions.push(route.request().postDataJSON());
+  if(submissions.length===2)return route.abort('failed');
+  return route.fulfill(submissions.length===1?{status:503,headers,json:{success:false}}:{headers,json:{success:true}});
+ });
+ await page.goto('/');await page.getByRole('link',{name:'Deneme dersine başvur',exact:true}).click();await expect(page).toHaveURL(/#basvuru$/);await expect(page.getByRole('heading',{name:'Deneme dersi başvurusu',exact:true})).toBeVisible();
+ const form=page.getByRole('form',{name:'Deneme dersi başvuru formu'});
+ await form.getByRole('button',{name:'Başvuruyu gönder',exact:true}).click();expect(submissions).toHaveLength(0);
+ await form.getByLabel('Ad soyad',{exact:true}).fill('Örnek Veli');await form.getByLabel('Telefon numarası',{exact:true}).fill('05551234567');await form.getByRole('combobox',{name:'Başvuru kimin için?',exact:false}).selectOption('CHILD');await form.getByLabel('Çocuğun yaşı',{exact:true}).fill('8');await form.getByRole('combobox',{name:'Ders tercihi',exact:false}).selectOption('SWIMMING');await form.getByLabel('Notunuz (isteğe bağlı)',{exact:true}).fill('Hafta sonu için bilgi istiyorum.');await form.getByRole('checkbox').check();
+ await form.getByRole('button',{name:'Başvuruyu gönder',exact:true}).click();await expect(form.getByRole('alert')).toContainText('Bilgileriniz korunuyor');await expect(form.getByLabel('Ad soyad',{exact:true})).toHaveValue('Örnek Veli');await expect(page.getByText('Başvurunuz gönderildi.',{exact:true})).toHaveCount(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('#basvuru').screenshot({path:'test-results/trial-form-mobile.png'});
+ await form.getByRole('button',{name:'Başvuruyu gönder',exact:true}).click();await expect(form.getByRole('alert')).toContainText('Bağlantı kurulamadı');
+ await form.getByRole('button',{name:'Başvuruyu gönder',exact:true}).click();await expect(page.getByRole('status')).toContainText('Başvurunuz gönderildi.');expect(submissions).toHaveLength(3);expect(submissions[2].child_age).toBe('8');expect(submissions[2].lesson_type).toBe('Yüzme');expect(submissions[2].phone).toBe('05551234567');
+ await page.getByRole('button',{name:'Yeni başvuru oluştur',exact:true}).click();await expect(page.getByLabel('Ad soyad',{exact:true})).toHaveValue('');await expect(page.getByLabel('Çocuğun yaşı',{exact:true})).toHaveCount(0);
+ await page.setViewportSize({width:1440,height:1000});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('#basvuru').screenshot({path:'test-results/trial-form-desktop.png'});
 });

@@ -5,6 +5,8 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+  # Public recipient identifier reused from the club's existing Web3Forms form.
+  NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY = "f2b5a301-aa6b-4dde-bb61-f6ef00bbf02d"
   # Authenticated writes stay on the portal origin even when the public site is primary.
   APP_ORIGIN = "https://panel.alanyadenizaslanlarisk.com"
   # Public project identifiers; never put a secret/service-role key here.
