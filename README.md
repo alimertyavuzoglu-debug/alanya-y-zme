@@ -226,3 +226,11 @@ Yeni antrenör için rutin SQL veya Authentication / Users işlemi gerekmez. Yö
 Yeni uçlar: GET/POST/DELETE `/api/admin/coach-invitations`, PATCH `/api/admin/coaches`, GET `/api/invitations`, POST `/api/invitations/session`, POST `/api/invitations/accept`, GET `/auth/callback`, `/invite/[token]`. Yetkili yönetici işlemlerinde aktif ADMIN kontrolü; tüm yazmalarda aynı kaynak ve katı alan doğrulaması vardır.
 
 Doğrulama: üretim derlemesi, 22 tarayıcı senaryosu ve 59 yerel test; PostgreSQL testleri doğrulanmış e-posta/rol sınırı, iptal/yenileme/süre aşımı, idempotent kabul, mevcut hesap, aktif/pasif ve yönetici hesabını korumayı kapsar. Tarayıcıdaki yetkili UI/Auth cevapları mock’tur; gerçek e-posta gönderimi ve gerçek davet kabulü uzak 006 kurulumu sonrasında ayrıca doğrulanmalıdır.
+
+## Üretim alan adları
+
+- Ana Astro sitesinin statik kopyası ayrı Netlify projesinde: `https://alanyadenizaslanlarisk.com` (`silver-semifreddo-30119f`).
+- Bu Next.js panelinin birincil adresi: `https://panel.alanyadenizaslanlarisk.com`.
+- Eski `alanyadenizaslanlari.netlify.app` hostuna gelen istekler, yol ve sorgu korunarak panelin HTTPS adresine 308 yönlenir. Kural yalnızca bu tam hosta uygulanır; localhost ve deploy preview adresleri etkilenmez. Ana sitenin mevcut eski giriş bağlantısı böylece yeni adrese ulaşır.
+- Supabase Authentication → URL Configuration: Site URL `https://panel.alanyadenizaslanlarisk.com`; Redirect URLs listesine `https://panel.alanyadenizaslanlarisk.com/**` eklenmelidir. Davetlerin PKCE doğrulama dönüşü için gereklidir.
+- Farklı alan adlarının tarayıcı oturum çerezleri ayrıdır; yeni panel adresinde mevcut hesapla yeniden giriş yapılır. Supabase kullanıcıları ve kulüp verileri taşınmaz veya sıfırlanmaz.

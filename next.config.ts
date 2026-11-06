@@ -1,6 +1,14 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    return [{
+      source: '/:path*',
+      has: [{ type: 'host', value: 'alanyadenizaslanlari\\.netlify\\.app' }],
+      destination: 'https://panel.alanyadenizaslanlarisk.com/:path*',
+      permanent: true,
+    }];
+  },
   async headers() {
     return [{ source: '/(.*)', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },
