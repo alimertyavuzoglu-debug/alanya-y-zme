@@ -1,3 +1,9 @@
+# Ana site ve paneli tek hesapta toplama
+
+[Ana site taşıma paketi](ana-site-tasima.zip) · [Orijinal yayın yedeği](ana-site-orijinal-yedek.zip) · [Taşıma notları](ANA-SITE-TASIMA.md)
+
+[Masaüstü görünüm](assets/ana-site-panel-baglantisi.png) · [Mobil menü](assets/ana-site-panel-mobil.png)
+
 # Panelden antrenör daveti
 
 [006 bir defalık SQL kurulumu](antrenor-davet-kurulum.sql)
