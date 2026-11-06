@@ -227,10 +227,22 @@ Yeni uçlar: GET/POST/DELETE `/api/admin/coach-invitations`, PATCH `/api/admin/c
 
 Doğrulama: üretim derlemesi, 22 tarayıcı senaryosu ve 59 yerel test; PostgreSQL testleri doğrulanmış e-posta/rol sınırı, iptal/yenileme/süre aşımı, idempotent kabul, mevcut hesap, aktif/pasif ve yönetici hesabını korumayı kapsar. Tarayıcıdaki yetkili UI/Auth cevapları mock’tur; gerçek e-posta gönderimi ve gerçek davet kabulü uzak 006 kurulumu sonrasında ayrıca doğrulanmalıdır.
 
-## Üretim alan adları
+## Tek uygulama: ziyaretçi sitesi ve kulüp paneli
 
-- Ana Astro sitesinin statik kopyası ayrı Netlify projesinde: `https://alanyadenizaslanlarisk.com` (`silver-semifreddo-30119f`).
-- Bu Next.js panelinin birincil adresi: `https://panel.alanyadenizaslanlarisk.com`.
-- Eski `alanyadenizaslanlari.netlify.app` hostuna gelen istekler, yol ve sorgu korunarak panelin HTTPS adresine 308 yönlenir. Kural yalnızca bu tam hosta uygulanır; localhost ve deploy preview adresleri etkilenmez. Ana sitenin mevcut eski giriş bağlantısı böylece yeni adrese ulaşır.
-- Supabase Authentication → URL Configuration: Site URL `https://panel.alanyadenizaslanlarisk.com`; Redirect URLs listesine `https://panel.alanyadenizaslanlarisk.com/**` eklenmelidir. Davetlerin PKCE doğrulama dönüşü için gereklidir.
-- Farklı alan adlarının tarayıcı oturum çerezleri ayrıdır; yeni panel adresinde mevcut hesapla yeniden giriş yapılır. Supabase kullanıcıları ve kulüp verileri taşınmaz veya sıfırlanmaz.
+Kullanıcı son tercihinde mavi/sarı tasarımı ziyaretçilerin göreceği ana site olarak seçti. Hedef yapı, iki alan adını da bu Next.js uygulamasında (`alanyadenizaslanlari`) toplar:
+
+- `https://alanyadenizaslanlarisk.com`: mavi/sarı ziyaretçi sitesi. İçerik, mevcut Supabase `site_content` kaydından okunur ve yönetici Site içeriği editörüyle güncellenir.
+- `https://panel.alanyadenizaslanlarisk.com`: ana yol `/login` adresine yönlenir; yönetici ve antrenör ekranları aynı uygulamadadır.
+- `silver-semifreddo-30119f` projesindeki krem Astro kopyası içerik/yayın yedeğidir. Seçilen ana tasarım değildir. Eski blog/başarı içeriklerinin tamamı bu yedekte korunur; bu değişiklik o içerikleri yeni tasarımda yeniden modellemez.
+
+Portal bağlantıları açıkça panel originine; panelin Siteyi aç / Kulüp sitesine dön bağlantıları ziyaretçi originine gider. Public host üzerindeki login/admin/coach/invite/auth yolları panel originine yönlenir. Eski `/hakkimizda`, `/kadro`, `/iletisim`, `/programlar` bağlantıları yeni tek sayfanın ilgili bölümlerine gider.
+
+Eski `alanyadenizaslanlari.netlify.app` hostu yol ve sorguyu koruyarak panel originine 308 yönlenir. Host koşulları localhost/deploy preview adreslerine uygulanmaz. Panel kök yönlendirmesi yalnızca panel hostunda çalışır; public kökte mavi/sarı sayfa gösterilir.
+
+**Yayın ayarı:** `netlify.toml` içinde `APP_ORIGIN=https://panel.alanyadenizaslanlarisk.com` sabittir. Netlify'nin birincil domaini ana siteye değişse bile doğrulanmış yazma işlemleri yalnızca panel origininden kabul edilir. API için CORS veya ek güvenilir origin genişlemesi yapılmaz.
+
+**Alan adı geçişi:** Ana domain ve `www` alias'ları `silver-semifreddo-30119f` projesinden bu projeye taşınır. Ana domain birincil yapılır; panel alias'ı bu projede kalır. Cloudflare'deki `www` CNAME hedefi `alanyadenizaslanlari.netlify.app` olmalıdır. `@` A kaydı ve `panel` CNAME kaydı aynı kalır.
+
+**Supabase:** Authentication → URL Configuration içinde Site URL `https://panel.alanyadenizaslanlarisk.com`, Redirect URLs listesinde `https://panel.alanyadenizaslanlarisk.com/**` olmalıdır. Mevcut kullanıcılar/veriler korunur; farklı hostlarda oturum çerezleri ayrı olduğundan panel adresinde mevcut hesapla giriş yapılır.
+
+Doğrulama: üretim derlemesi, 11 origin/içerik/validasyon testi, 12 yerel üretim HTTP kontrolü ve iki tarayıcı görünümü. Public kök, panel kök/giriş, giriş ve davet yönlendirmeleri, eski içerik bağlantıları, sorgu korunması ve portal origin yazma sınırı doğrulandı.

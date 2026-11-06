@@ -2,12 +2,29 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   poweredByHeader: false,
   async redirects() {
+    const publicHost = [{ type: 'host' as const, value: '(?:www\\.)?alanyadenizaslanlarisk\\.com' }];
     return [{
       source: '/:path*',
       has: [{ type: 'host', value: 'alanyadenizaslanlari\\.netlify\\.app' }],
       destination: 'https://panel.alanyadenizaslanlarisk.com/:path*',
       permanent: true,
-    }];
+    }, {
+      source: '/',
+      has: [{ type: 'host', value: 'panel\\.alanyadenizaslanlarisk\\.com' }],
+      destination: '/login',
+      permanent: false,
+    }, ...['/login', '/admin', '/coach', '/invite/:path*', '/auth/:path*'].map(source => ({
+      source,
+      has: publicHost,
+      destination: `https://panel.alanyadenizaslanlarisk.com${source}`,
+      permanent: false,
+    })), ...[
+      ['/hakkimizda', '/#kulup'],
+      ['/kadro', '/#antrenorler'],
+      ['/iletisim', '/#iletisim'],
+      ['/programlar', '/#egitimler'],
+      ['/programlar/:path*', '/#egitimler'],
+    ].map(([source, destination]) => ({ source, destination, permanent: false }))];
   },
   async headers() {
     return [{ source: '/(.*)', headers: [

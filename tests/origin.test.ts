@@ -20,3 +20,8 @@ test('invalid explicit origin fails closed and unrelated URL env is ignored',()=
  assert.equal(expectedOrigin(req()),null);assert.equal(mutationGuard(req())?.status,403);
  delete process.env.APP_ORIGIN;process.env.URL='https://unrelated.example';assert.equal(expectedOrigin(req()),'http://internal:3000');
 }));
+test('public primary domain keeps authenticated writes on the portal origin',()=>withEnv({NETLIFY:'true',CONTEXT:'production',URL:'https://alanyadenizaslanlarisk.com',APP_ORIGIN:'https://panel.alanyadenizaslanlarisk.com'},()=>{
+ assert.equal(mutationGuard(req('https://panel.alanyadenizaslanlarisk.com')),null);
+ assert.equal(mutationGuard(req('https://alanyadenizaslanlarisk.com'))?.status,403);
+ assert.equal(mutationGuard(req('https://panel.alanyadenizaslanlarisk.com.attacker.example'))?.status,403);
+}));

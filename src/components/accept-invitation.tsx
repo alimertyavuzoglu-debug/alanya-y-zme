@@ -1,4 +1,5 @@
 'use client';
+import {PUBLIC_SITE_ORIGIN} from '@/lib/site-addresses';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/club-client';
@@ -31,7 +32,7 @@ export default function AcceptInvitation({token}:{token:string}) {
   }catch(e){setError(e instanceof Error?e.message:'İşlem tamamlanamadı.');}finally{setBusy(false);}
  }
  const ownSession=context?.user?.email.toLowerCase()===context?.invitation.email.toLowerCase();
- return <main className="invitation-page"><section className="panel invitation-card"><a href="/" className="eyebrow">DENİZ ASLANLARI SPOR KULÜBÜ</a><h1>Antrenör daveti</h1>
+ return <main className="invitation-page"><section className="panel invitation-card"><a href={PUBLIC_SITE_ORIGIN} className="eyebrow">DENİZ ASLANLARI SPOR KULÜBÜ</a><h1>Antrenör daveti</h1>
   {loading?<p role="status">Davet kontrol ediliyor…</p>:context?<><p>Merhaba <strong>{context.invitation.display_name}</strong>, kulübün antrenör paneline davetlisiniz.</p><p className="invite-email">{context.invitation.email}</p>
    {notice&&<p role="status" className="notice">{notice}</p>}{error&&<p role="alert" className="notice error">{error}</p>}
    {ownSession?<><p>E-posta doğrulamasından sonra daveti tamamlayarak derslerinize erişebilirsiniz.</p><button className="button" disabled={busy} onClick={()=>void accept()}>{busy?'Tamamlanıyor…':'Daveti kabul et ve panele geç'}</button>{!context.user?.confirmed&&<p className="fine-print">Önce e-postanızdaki doğrulama bağlantısını açın.</p>}</>:<>
