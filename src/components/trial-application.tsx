@@ -4,7 +4,7 @@ import {lessonLabels,trialApplicationSchema,trialEmailFields} from '@/lib/trial-
 
 class SubmissionError extends Error {}
 
-export default function TrialApplicationForm({phone}:{phone:string}){
+export default function TrialApplicationForm({phone,compact=false}:{phone:string;compact?:boolean}){
  const formRef=useRef<HTMLFormElement>(null);
  const [forChild,setForChild]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[sent,setSent]=useState(false);
  const accessKey=process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY;
@@ -24,8 +24,8 @@ export default function TrialApplicationForm({phone}:{phone:string}){
   }catch(e){setError(e instanceof Error&&e.name==='TimeoutError'?'Gönderim zaman aşımına uğradı. Bilgileriniz korunuyor; yeniden deneyin.':e instanceof SubmissionError?e.message:'Bağlantı kurulamadı. Bilgileriniz korunuyor; yeniden deneyebilir veya kulübü arayabilirsiniz.');}
   finally{setBusy(false);}
  }
- return <section id="basvuru" className="trial-application" aria-labelledby="trial-title" tabIndex={-1}>
-  <div className="trial-intro"><span className="site-overline">İLK ADIM</span><h2 id="trial-title">Deneme dersi başvurusu</h2><p>Kısa formu doldurun. Ders ve saat seçeneklerini görüşmek için sizinle iletişime geçelim.</p><a href={`tel:${phone}`} className="site-text-link">Telefonla görüşün: {phone}</a></div>
+ return <section id="basvuru" className={`trial-application ${compact?'trial-standalone':''}`} aria-labelledby={compact?undefined:"trial-title"} aria-label={compact?"Deneme dersi başvurusu":undefined} tabIndex={-1}>
+  {!compact&&<div className="trial-intro"><span className="site-overline">İLK ADIM</span><h2 id="trial-title">Deneme dersi başvurusu</h2><p>Kısa formu doldurun. Ders ve saat seçeneklerini görüşmek için sizinle iletişime geçelim.</p><a href={`tel:${phone}`} className="site-text-link">Telefonla görüşün: {phone}</a></div>}
   <div className="trial-form-card">{sent?<div role="status" className="trial-success"><h3>Başvurunuz gönderildi.</h3><p>Ders ve saat seçenekleri için kulüp sizinle telefonla iletişime geçecektir.</p><button className="button secondary" type="button" onClick={()=>{setSent(false);setForChild(false);}}>Yeni başvuru oluştur</button></div>:<form ref={formRef} onSubmit={submit} method="post" action="https://api.web3forms.com/submit" aria-label="Deneme dersi başvuru formu">
    <input type="hidden" name="access_key" value={accessKey??''}/><input type="hidden" name="subject" value="Deneme dersi başvurusu — Deniz Aslanları"/><input type="hidden" name="from_name" value="Deniz Aslanları Web Sitesi"/>
    <fieldset disabled={busy} className="form-grid">

@@ -256,3 +256,13 @@ Gönderim, kullanıcının eski sitesinde zaten kullanılan Web3Forms e-posta al
 İstemci alanları doğrular; boş onay/telefon/çocuk yaşı ile göndermez. Sağlayıcı HTTP başarılı yanıt **ve** `success:true` vermeden başarılı gönderim göstermez. Hatalarda/zaman aşımında kullanıcı girdileri korunur. Honeypot, gönderim sırasında kilit ve 20 saniyelik zaman aşımı vardır. Native form POST fallback’i kişisel bilgilerin URL sorgusuna yazılmasını engeller.
 
 Doğrulama: payload validasyonu/çocuk yaşı/alan sınırları için 2 test; mobil tarayıcı senaryosunda CTA ile forma ulaşma, zorunlu alanlar, sağlayıcı reddi, ağ hatası, girdileri koruma ve kabul sonrası başarı test edilir. Web3Forms testte mock edilir; gerçek e-posta gönderilmez ve alıcıya teslim garantisi iddia edilmez.
+
+### Public website pages and legacy content
+
+The approved blue/yellow homepage links to real routes (`/hakkimizda`, `/programlar`, `/kadro`, `/iletisim`, `/basvuru`) rather than scroll anchors. Forty-six published Turkish/English pages from the previous Astro site are preserved in `src/data/public-pages.json`; original club photographs and video are namespaced under `public/legacy/`. Eight programme detail pages, coach biography, articles, achievements, parent guidance and legal pages remain accessible. This import contains published website content only, not private coach profiles.
+
+`src/app/[...slug]/page.tsx` renders only registered public pages; unknown paths return 404. `PublicRichText` renders limited text formatting through React without raw HTML execution. Navigation and image protocols are validated. The public sitemap includes the registered routes. Existing portal/authentication host redirects remain in place.
+
+Administrators can select a page under **Site içeriği → Diğer sayfalar** and edit its title, introduction, body and photograph URL. Existing JSONB content stores these overrides in `pageOverrides`; no database migration is required. **Orijinal içeriği kullan** restores the imported page after publishing. Editing the contact/programme body replaces its default information cards with the administrator's text. Telephone links use the current CMS telephone. Legacy schedules are presented as published facility information; current lesson availability is confirmed with the club.
+
+Subtle reveal, image-hover and decorative water animations respect `prefers-reduced-motion`; content remains readable without JavaScript. The application form is now on `/basvuru` and retains its existing consent, validation and submission behavior.

@@ -21,7 +21,7 @@ export async function GET(){
 export async function PUT(request:Request){
  const guard=mutationGuard(request);if(guard)return guard;
  const auth=await admin();if(auth.response)return auth.response;
- let raw:unknown;try{raw=await readBody(request);}catch{return failure('Geçersiz veya fazla büyük JSON.',400);}
+ let raw:unknown;try{raw=await readBody(request,1048576);}catch{return failure('Geçersiz veya fazla büyük JSON.',400);}
  const parsed=z.object({content:contentSchema,revision:z.number().int().min(0)}).strict().safeParse(raw);
  if(!parsed.success)return failure('Alanları ve görsel adreslerini kontrol edin.',422);
  const {data,error}=await auth.client.from('site_content').update({content:parsed.data.content}).eq('key','homepage').eq('revision',parsed.data.revision).select('revision').maybeSingle();

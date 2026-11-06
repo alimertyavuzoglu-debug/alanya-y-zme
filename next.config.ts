@@ -3,7 +3,7 @@ const config: NextConfig = {
   poweredByHeader: false,
   async redirects() {
     const publicHost = [{ type: 'host' as const, value: '(?:www\\.)?alanyadenizaslanlarisk\\.com' }];
-    return [{
+    return [{source:'/sitemap-index.xml',destination:'/sitemap.xml',permanent:true},{source:'/sitemap-0.xml',destination:'/sitemap.xml',permanent:true},{
       source: '/:path*',
       has: [{ type: 'host', value: 'alanyadenizaslanlari\\.netlify\\.app' }],
       destination: 'https://panel.alanyadenizaslanlarisk.com/:path*',
@@ -18,13 +18,7 @@ const config: NextConfig = {
       has: publicHost,
       destination: `https://panel.alanyadenizaslanlarisk.com${source}`,
       permanent: false,
-    })), ...[
-      ['/hakkimizda', '/#kulup'],
-      ['/kadro', '/#antrenorler'],
-      ['/iletisim', '/#iletisim'],
-      ['/programlar', '/#egitimler'],
-      ['/programlar/:path*', '/#egitimler'],
-    ].map(([source, destination]) => ({ source, destination, permanent: false }))];
+    }))];
   },
   async headers() {
     return [{ source: '/(.*)', headers: [

@@ -102,12 +102,12 @@ test('public homepage desktop and mobile navigation and contact work',async({pag
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setViewportSize({width:1487,height:1058});await page.goto('/');
  await expect(page.getByRole('heading',{name:/Birlikte daha güçlü/})).toBeVisible();
- await page.evaluate(()=>document.fonts.ready);await page.waitForFunction(()=>[...document.images].every(i=>i.complete&&i.naturalWidth>0));
+ await page.evaluate(()=>document.fonts.ready);await page.waitForFunction(()=>[...document.images].filter(i=>i.loading!=='lazy').every(i=>i.complete&&i.naturalWidth>0));
  await page.screenshot({path:'test-results/homepage-desktop.png',fullPage:false});
- await page.getByRole('link',{name:'Deneme dersine başvur',exact:true}).click();await expect(page).toHaveURL(/#basvuru$/);await expect(page.getByRole('form',{name:'Deneme dersi başvuru formu'})).toBeVisible();
+ await page.getByRole('link',{name:'Deneme dersine başvur',exact:true}).first().click();await expect(page).toHaveURL(/\/basvuru$/);await expect(page.getByRole('form',{name:'Deneme dersi başvuru formu'})).toBeVisible();
  await expect(page.locator('a[href="tel:+905459477973"]').first()).toBeVisible();
  await page.setViewportSize({width:390,height:844});await page.goto('/');
- await page.getByRole('button',{name:'Menü',exact:true}).click();await page.getByRole('navigation',{name:'Ana menü'}).getByRole('link',{name:'Eğitimler'}).click();await expect(page).toHaveURL(/#egitimler$/);
+ await page.getByRole('button',{name:'Menü',exact:true}).click();await page.getByRole('navigation',{name:'Ana menü'}).getByRole('link',{name:'Eğitimler'}).click();await expect(page).toHaveURL(/\/programlar$/);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.goto('/');await page.screenshot({path:'test-results/homepage-mobile.png',fullPage:true});expect(errors).toEqual([]);
 });
@@ -127,11 +127,13 @@ test('CMS admin edits text, uploads image and publishes with revision; conflict 
  await expect(page.getByLabel('Ana başlık (satır sonu kullanılabilir)')).toBeVisible();
  await page.screenshot({path:'test-results/site-editor-desktop.png',fullPage:true});
  await page.getByLabel('Ana başlık (satır sonu kullanılabilir)').fill('Yeni ana başlık');
- await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.getByRole('status')).toContainText('kaydedildi ve ana sayfada yayımlandı');expect(stored.heroTitle).toBe('Yeni ana başlık');expect(revision).toBe(1);
+ await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.getByRole('status')).toContainText('kaydedildi ve web sitesinde yayımlandı');expect(stored.heroTitle).toBe('Yeni ana başlık');expect(revision).toBe(1);
  await expect(page.getByLabel('Ana görsel yükle',{exact:true})).toBeEnabled();
  await page.getByLabel('Ana görsel yükle',{exact:true}).setInputFiles('public/images/monogram.png');
  await expect(page.getByRole('status')).toContainText('Görsel yüklendi');expect(stored.heroImage).toBe('/images/hero.png');
  await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.getByRole('status')).toContainText('kaydedildi');expect(stored.heroImage).toBe('https://example.com/swimmer.png');
+ await page.getByLabel('Düzenlenecek sayfa').selectOption('/hakkimizda');await page.getByLabel('Sayfa başlığı',{exact:true}).fill('Kulübümüzü tanıyın');await page.getByLabel('Sayfa metni',{exact:true}).fill('## Kulübümüz\n\nGüncel kulüp bilgileri.');await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.getByRole('status')).toContainText('kaydedildi');expect(stored.pageOverrides['/hakkimizda'].title).toBe('Kulübümüzü tanıyın');
+ await page.getByRole('button',{name:'Orijinal içeriği kullan'}).click();await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.getByRole('status')).toContainText('kaydedildi');expect(stored.pageOverrides['/hakkimizda']).toBeUndefined();
  revision++;await page.getByLabel('Ana başlık (satır sonu kullanılabilir)').fill('Çakışan taslak');await page.getByRole('button',{name:'Kaydet ve yayımla'}).click();await expect(page.locator('.site-editor [role=alert]')).toContainText('başka bir oturumda');expect(stored.heroTitle).toBe('Yeni ana başlık');
 });
 
@@ -254,7 +256,7 @@ test('trial CTA reaches a fillable form, preserves failed submission and confirm
   if(submissions.length===2)return route.abort('failed');
   return route.fulfill(submissions.length===1?{status:503,headers,json:{success:false}}:{headers,json:{success:true}});
  });
- await page.goto('/');await page.getByRole('link',{name:'Deneme dersine başvur',exact:true}).click();await expect(page).toHaveURL(/#basvuru$/);await expect(page.getByRole('heading',{name:'Deneme dersi başvurusu',exact:true})).toBeVisible();
+ await page.goto('/');await page.getByRole('link',{name:'Deneme dersine başvur',exact:true}).first().click();await expect(page).toHaveURL(/\/basvuru$/);await expect(page.getByRole('heading',{name:'Deneme dersine başvurun',exact:true})).toBeVisible();
  const form=page.getByRole('form',{name:'Deneme dersi başvuru formu'});
  await form.getByRole('button',{name:'Başvuruyu gönder',exact:true}).click();expect(submissions).toHaveLength(0);
  await form.getByLabel('Ad soyad',{exact:true}).fill('Örnek Veli');await form.getByLabel('Telefon numarası',{exact:true}).fill('05551234567');await form.getByRole('combobox',{name:'Başvuru kimin için?',exact:false}).selectOption('CHILD');await form.getByLabel('Çocuğun yaşı',{exact:true}).fill('8');await form.getByRole('combobox',{name:'Ders tercihi',exact:false}).selectOption('SWIMMING');await form.getByLabel('Notunuz (isteğe bağlı)',{exact:true}).fill('Hafta sonu için bilgi istiyorum.');await form.getByRole('checkbox').check();
