@@ -288,3 +288,7 @@ This account has not been provisioned by application code. Create it through the
 3. Verify the returned row has the intended email, `is_active=true` and `role=ADMIN`, then sign in at the portal using the password set in Supabase.
 
 These are manual operations, not application startup code or migrations. Existing RLS/authentication controls remain in force; no frontend email allowlist grants privileges. Local PostgreSQL fixture tests validate these cases but do not demonstrate that the live account or role exists.
+
+### Login diagnostics
+
+The password login endpoint distinguishes unconfirmed email (403), restricted accounts (403), invalid email/password (401), rate limits (429) and authentication-service failures (503). Only controlled messages reach the browser; passwords, raw Auth response bodies and account/session details are never logged or echoed. Email is trimmed/lowercased, while password characters are preserved exactly. Failed authentication never continues to the role lookup. This improves diagnosis without changing confirmation, RLS or role requirements.

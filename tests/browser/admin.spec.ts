@@ -268,3 +268,11 @@ test('trial CTA reaches a fillable form, preserves failed submission and confirm
  await page.getByRole('button',{name:'Yeni başvuru oluştur',exact:true}).click();await expect(page.getByLabel('Ad soyad',{exact:true})).toHaveValue('');await expect(page.getByLabel('Çocuğun yaşı',{exact:true})).toHaveCount(0);
  await page.setViewportSize({width:1440,height:1000});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('#basvuru').screenshot({path:'test-results/trial-form-desktop.png'});
 });
+test('login shows actionable failures, preserves inputs and never checks roles after rejected authentication',async({page})=>{
+ let roles=0;let attempt=0;
+ const problems=[{status:403,error:'Bu hesabın e-posta adresi henüz doğrulanmamış. Önce e-posta doğrulamasını tamamlayın.'},{status:401,error:'E-posta veya parola hatalı. Kulüp hesabınız için belirlediğiniz parolayı kullanın.'},{status:503,error:'Giriş hizmetine şu anda ulaşılamıyor. Biraz sonra tekrar deneyin.'}];
+ await page.route('**/api/auth/me',route=>{roles++;return route.fulfill({status:401,json:{error:'Oturum gerekli'}});});
+ await page.route('**/api/auth/login',route=>{const problem=problems[attempt++];return route.fulfill({status:problem.status,json:{error:problem.error}});});
+ await page.goto('/login');await page.getByLabel('E-posta adresi',{exact:true}).fill('denizaslanlari@gmail.com');await page.getByLabel('Parola',{exact:true}).fill('fixture-password-only');
+ for(const problem of problems){await page.getByRole('button',{name:'Panele giriş yap',exact:true}).click();await expect(page.locator('.login-form').getByRole('alert')).toHaveText(problem.error);await expect(page.getByLabel('E-posta adresi',{exact:true})).toHaveValue('denizaslanlari@gmail.com');await expect(page.getByLabel('Parola',{exact:true})).toHaveValue('fixture-password-only');await expect(page.getByRole('button',{name:'Panele giriş yap',exact:true})).toBeEnabled();expect(roles).toBe(0);await expect(page).toHaveURL(/\/login$/);}
+});
