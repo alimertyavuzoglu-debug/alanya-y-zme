@@ -251,7 +251,11 @@
     "Merhaba, Triatlon Antrenmanı için müsaitlik durumu nedir?": "Hello, is there availability for Triathlon training?",
     "Merhaba, Triatlon Antrenmanı için çocuğumun seviyesi uygun mu, öğrenebilir mi?": "Hello, is Triathlon training suitable for my child’s swimming level?",
     "Merhaba, Triatlon Antrenmanı için deneme ders alabilir miyim?": "Hello, can we book a trial lesson for Triathlon training?",
-    "Merhaba, Triatlon Antrenmanı (Yaş sınırı yok": "Hello, I would like information about Triathlon training."
+    "Merhaba, Triatlon Antrenmanı (Yaş sınırı yok": "Hello, I would like information about Triathlon training.",
+    "E-posta ve sosyal medya": "Email and social media",
+    "E-posta": "Email",
+    "Bize e-posta yazın": "Send us an email",
+    "Kulüpten paylaşımları takip edin": "Follow the club on Instagram"
   },
   "ru": {
     "İçeriğe geç": "Перейти к содержимому",
@@ -505,6 +509,10 @@
     "Merhaba, Triatlon Antrenmanı için müsaitlik durumu nedir?": "Здравствуйте! Есть ли места на программу «Тренировки по триатлону»?",
     "Merhaba, Triatlon Antrenmanı için çocuğumun seviyesi uygun mu, öğrenebilir mi?": "Здравствуйте! Подойдёт ли программа «Тренировки по триатлону» моему ребёнку по уровню подготовки?",
     "Merhaba, Triatlon Antrenmanı için deneme ders alabilir miyim?": "Здравствуйте! Можно ли записаться на пробное занятие по программе «Тренировки по триатлону»?",
-    "Merhaba, Triatlon Antrenmanı (Yaş sınırı yok": "Здравствуйте! Хочу узнать подробнее о программе «Тренировки по триатлону»."
+    "Merhaba, Triatlon Antrenmanı (Yaş sınırı yok": "Здравствуйте! Хочу узнать подробнее о программе «Тренировки по триатлону».",
+    "E-posta ve sosyal medya": "Электронная почта и соцсети",
+    "E-posta": "Электронная почта",
+    "Bize e-posta yazın": "Напишите нам",
+    "Kulüpten paylaşımları takip edin": "Следите за новостями клуба в Instagram"
   }
 }
