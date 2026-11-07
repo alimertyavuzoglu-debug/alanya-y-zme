@@ -276,3 +276,15 @@ Translations are bundled in `src/data/public-translations.json` and `src/data/pu
 **Site içeriği → Ana sayfanın içerik dili** edits homepage text separately for each language through backward-compatible `localizedText` JSON content. The club name, images and telephone are shared. Other-page editing lists all localized routes. Form messages and consent are localized, while field codes and validation remain stable; submissions include `preferred_language` so the club can reply appropriately.
 
 Federation references use the verified public triathlon club record, the Turkish Swimming Federation's official registration guidance and the Turkish Cycling Federation's official website/portal. Swimming and cycling membership registrations could not be verified in public directories; their portals require authentication. The user deferred providing registration identifiers. The general federation links are therefore labelled as official references, not as proof of the club's membership in those two federations.
+
+### Additional administrator: denizaslanlari@gmail.com
+
+Login, administrator and coach screens share `PortalBrand`, which displays the existing purple club emblem and DAS abbreviation.
+
+This account has not been provisioned by application code. Create it through the authorized Supabase **Authentication → Users → Add user → Create new user** interface, choose its password there, and ensure email verification is complete. Passwords and Auth identities are never created or modified by SQL.
+
+1. Run `supabase/operations/preview-denizaslanlari-admin.sql` in Supabase SQL Editor. This is read-only and reports the exact email match, verification, profile activity and existing ADMIN role.
+2. **Permission-changing operation:** run `supabase/operations/grant-denizaslanlari-admin.sql` only for the authorized account. It creates a missing club profile and adds ADMIN inside a transaction. It fails for absent/ambiguous/unverified accounts and disabled profiles; existing profile names and roles remain intact. Re-running does not duplicate permissions.
+3. Verify the returned row has the intended email, `is_active=true` and `role=ADMIN`, then sign in at the portal using the password set in Supabase.
+
+These are manual operations, not application startup code or migrations. Existing RLS/authentication controls remain in force; no frontend email allowlist grants privileges. Local PostgreSQL fixture tests validate these cases but do not demonstrate that the live account or role exists.
