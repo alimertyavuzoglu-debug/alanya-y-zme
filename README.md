@@ -292,3 +292,27 @@ These are manual operations, not application startup code or migrations. Existin
 ### Login diagnostics
 
 The password login endpoint distinguishes unconfirmed email (403), restricted accounts (403), invalid email/password (401), rate limits (429) and authentication-service failures (503). Only controlled messages reach the browser; passwords, raw Auth response bodies and account/session details are never logged or echoed. Email is trimmed/lowercased, while password characters are preserved exactly. Failed authentication never continues to the role lookup. This improves diagnosis without changing confirmation, RLS or role requirements.
+
+### Account and permission management (007)
+
+**Hesaplar ve yetkiler** is the administrator's account directory: search email/name, invite an administrator or coach, edit one/both roles, disable access and remove an account from the club. Removal deactivates the club profile, revokes roles and pending invitations, and hides the entry by default. **Kaldırılmış hesapları göster** allows an administrator to explicitly restore access. Auth identities and records referenced by lessons, attendance and assignments are retained. The historical coach directory keeps names available after a role is removed, while excluding that person from active coach selection.
+
+One-time installation, with 001–006 already installed:
+
+1. Run `supabase/operations/preview-account-management.sql` read-only. Confirm the baseline exists and at least one administrator is active.
+2. **Schema/permission change:** run `supabase/migrations/202611070007_account_management.sql` once in the authorized Supabase SQL Editor. The file owns its PostgreSQL transaction and notifies PostgREST to reload its schema. No routine SQL/user provisioning is needed afterward.
+3. Open **Hesaplar ve yetkiler**, invite a test email with the intended role, share the generated link, verify the recipient's email and check the resulting panel. Test role changes/removal using a secondary account while keeping the current administrator active.
+
+| Change | Compatibility / impact |
+| --- | --- |
+| `coach_invitations.invite_role` with default COACH | Existing links retain their original role. Adding the constant default requires a brief table lock; no downtime claim is made. |
+| Role-aware invitation RPCs | Existing coach API remains usable. During rollout, lookup falls back to 006 until 007 is applied. Acceptance chooses its destination from current DB roles. |
+| Admin-only account directory | Limited/paginated fields from Auth and club profiles; no passwords, hashes or session tokens. Anon/coach callers are rejected. |
+| Role/profile mutation guards | Transaction-level advisory locking serializes permission writes. Current and last active administrator access is protected through RPC and direct authenticated role/profile updates. |
+| Access removal | Retains Auth and historical records, revokes pending links for the removed account and links issued by that account, and audits deleted role rows. This is club access removal, not permanent Auth deletion. |
+
+New API: GET/PATCH/DELETE `/api/admin/accounts`; GET/POST/DELETE `/api/admin/account-invitations`. All mutations require the portal origin, strict whitelisted JSON and an active ADMIN. A role chosen in signup metadata cannot grant access: the invitation's stored role, matching verified email, active issuer and token status govern acceptance. Previously accepted links cannot restore roles that were subsequently removed. A stale demoted administrator cannot call management RPCs.
+
+Before 007, the new section shows an actionable setup notice; existing login, public pages, coach directory and old invitation flow remain available. Migration failure rolls back the whole file. After a successful install, prefer a forward fix and retain the role column/guards; restoring a 006 accept function while ADMIN invitations are pending would change their meaning. Revoke pending invitations before any planned schema rollback. The authorized Supabase owner remains available for emergency account recovery; no service credential is introduced into the app.
+
+Validation uses real PostgreSQL/PGlite role checks and local fixtures, plus mocked browser account flows. It does not prove that 007 has been applied to the remote database or that an actual invitation email was delivered. Invitation URLs are shared manually; verification mail still uses the project's existing Supabase Auth configuration.

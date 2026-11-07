@@ -14,7 +14,7 @@ export type CoachInvitation = {
  id: string; email: string; display_name: string; status: 'PENDING'|'ACCEPTED'|'REVOKED';
  created_at: string; expires_at: string; accepted_by: string|null;
 };
-export type InvitationInfo = Pick<CoachInvitation,'email'|'display_name'|'expires_at'|'status'>;
+export type InvitationInfo = Pick<CoachInvitation,'email'|'display_name'|'expires_at'|'status'>&{invite_role?:'ADMIN'|'COACH'};
 // Only our own invitation route may follow the PKCE exchange. Never accept a URL or arbitrary path.
 export function invitationReturnPath(next: string|null) {
  return next && /^\/invite\/[a-f0-9]{64}$/.test(next) ? next : '/login';

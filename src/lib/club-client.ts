@@ -1,5 +1,5 @@
 export type RecordRow = Record<string, string | number | boolean | null>;
-export type Coach = { id: string; display_name: string; is_active: boolean };
+export type Coach = { id: string; display_name: string; is_active: boolean; has_coach_role?: boolean };
 export type ClubData = Record<string, RecordRow[]>;
 export const tables = ['groups','group_terms','athletes','enrollments','coach_assignments','training_plans','schedule_rules','sessions','session_coaches','session_athletes','athlete_attendance'] as const;
 

@@ -1,0 +1,11 @@
+import {z} from 'zod';
+import {invitationSchema} from './invitations';
+export const accountRoleSchema=z.enum(['ADMIN','COACH']);
+export type AccountRole=z.infer<typeof accountRoleSchema>;
+export const accountInvitationSchema=invitationSchema.extend({role:accountRoleSchema}).strict();
+export const accountUpdateSchema=z.object({id:z.string().uuid(),display_name:z.string().trim().min(1).max(150),is_active:z.boolean(),roles:z.array(accountRoleSchema).min(1).max(2).refine(v=>new Set(v).size===v.length)}).strict();
+export const accountRemovalSchema=z.object({id:z.string().uuid()}).strict();
+export type ClubAccount={id:string;email:string;display_name:string;is_active:boolean;roles:AccountRole[];email_verified:boolean;has_profile:boolean;created_at:string};
+export type AccountInvitation={id:string;email:string;display_name:string;invite_role:AccountRole;status:'PENDING'|'ACCEPTED'|'REVOKED';created_at:string;expires_at:string;accepted_by:string|null};
+export const accountRoleLabel=(role:AccountRole)=>role==='ADMIN'?'Yönetici':'Antrenör';
+export const accountSetupUrl='https://raw.githubusercontent.com/alimertyavuzoglu-debug/alanya-y-zme/main/supabase/migrations/202611070007_account_management.sql';
