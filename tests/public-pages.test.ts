@@ -5,7 +5,7 @@ import {publicPages,courses,getPublicPage,resolvePage,pageImage} from '../src/li
 import {contentSchema,defaultContent,resolveContent} from '../src/lib/site-content';
 import {publicHref,publicImage} from '../src/lib/public-markup';
 test('legacy pages, programme destinations and their public photographs are available',()=>{
- assert.equal(publicPages.length,47);assert.equal(courses.length,8);
+ assert.equal(publicPages.length,72);assert.equal(courses.length,8);
  for(const course of courses)assert.ok(getPublicPage(course.path)?.body);
  for(const page of publicPages){assert.ok(page.title);for(const img of [...page.images,pageImage(page)])if(img.startsWith('/'))assert.ok(existsSync('public'+img),img);for(const link of page.body.matchAll(/\[[^\]]*\]\((\/[^)]+)\)/g)){if(!link[1].startsWith('/legacy/'))assert.ok(getPublicPage(link[1].split('#')[0])||link[1]==='/',link[1]);}}
  assert.match(getPublicPage('/hakkimizda')!.body,/en fazla 8 kişilik/);

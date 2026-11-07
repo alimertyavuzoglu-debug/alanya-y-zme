@@ -1,7 +1,11 @@
 import data from '@/data/public-pages.json';
+import translations from '@/data/public-translations.json';
+import {localizedPath} from './public-locale';
 export type PublicPageContent={path:string;title:string;intro:string;description:string;body:string;image:string;images:string[];language:string};
 export type PageOverride={title:string;intro:string;body:string;image:string};
-const pages:Record<string,PublicPageContent>={...data.pages,'/basvuru':{path:'/basvuru',title:'Deneme dersine başvurun',intro:'Size veya çocuğunuza uygun programı birlikte belirleyelim.',description:'Alanya Deniz Aslanları deneme dersi başvuru formu.',body:'',image:'/legacy/images/galeri/havuz-cocuklar.webp',images:[],language:'tr'}};
+const pages:Record<string,PublicPageContent>=Object.fromEntries(Object.entries(data.pages).filter(([,page])=>page.language==='tr'));
+pages['/basvuru']={path:'/basvuru',title:'Deneme dersine başvurun',intro:'Size veya çocuğunuza uygun programı birlikte belirleyelim.',description:'Alanya Deniz Aslanları deneme dersi başvuru formu.',body:'',image:'/legacy/images/galeri/havuz-cocuklar.webp',images:[],language:'tr'};
+for(const locale of ['en','ru'] as const)for(const [canonical,page] of Object.entries(translations[locale])){const path=localizedPath(canonical,locale);pages[path]={...page,path,language:locale};}
 export const publicPages=Object.values(pages);
 export const courses=data.courses;
 export function getPublicPage(path:string){return Object.hasOwn(pages,path)?pages[path]:null;}

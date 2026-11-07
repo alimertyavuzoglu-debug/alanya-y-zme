@@ -1,6 +1,7 @@
 'use client';
+import type {PublicLocale} from '@/lib/public-locale';
 import {useEffect,useRef,type ReactNode} from 'react';
-export default function PublicMotion({children}:{children:ReactNode}){
+export default function PublicMotion({children,locale='tr'}:{children:ReactNode;locale?:PublicLocale}){
  const root=useRef<HTMLDivElement>(null);
  useEffect(()=>{
   if(!root.current||!('IntersectionObserver' in window)||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -9,5 +10,5 @@ export default function PublicMotion({children}:{children:ReactNode}){
   for(const node of nodes){if(node.getBoundingClientRect().top>=window.innerHeight){node.classList.add('reveal-pending');observer.observe(node);}}
   return()=>{observer.disconnect();nodes.forEach(n=>n.classList.remove('reveal-pending'));};
  },[]);
- return <div ref={root} className="public-site public-multipage">{children}</div>;
+ return <div ref={root} lang={locale} className="public-site public-multipage">{children}</div>;
 }
